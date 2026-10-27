@@ -45,3 +45,35 @@ button {
 a {
     color: #5b21b6;
 }
+.messages {
+    background-color: white;
+    padding: 20px;
+    margin: 30px auto;
+    width: 500px;
+    border: 1px solid #dddddd;
+    border-radius: 10px;
+}
+.recu {
+    background-color: #eeeeee;
+    color: #222222;
+    padding: 10px;
+    border-radius: 10px;
+    text-align: left;
+    width: 60%;
+}
+.envoye {
+    background-color: #7c3aed;
+    color: white;
+    padding: 10px;
+    border-radius: 10px;
+    text-align: right;
+    width: 60%;
+    margin-left: auto;
+}
+.heure {
+    font-size: 12px;
+    color: #888888;
+}
+.reactions {
+    font-size: 14px;
+}
