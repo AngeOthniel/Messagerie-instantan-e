@@ -26,13 +26,25 @@ formulaire.addEventListener("submit", function(event) {
         const rire = document.createElement("span");
         rire.textContent = " 😂 0";
         coeur.addEventListener("click", function() {
-            coeur.textContent = "❤️ 1";
+            if (coeur.textContent === "❤️ 0") {
+                coeur.textContent = "❤️ 1";
+            } else {
+                coeur.textContent = "❤️ 0";
+            }
         });
         pouce.addEventListener("click", function() {
-            pouce.textContent = " 👍 1";
+            if (pouce.textContent === " 👍 0") {
+                pouce.textContent = " 👍 1";
+            } else {
+                pouce.textContent = " 👍 0";
+            }
         });
         rire.addEventListener("click", function() {
-            rire.textContent = " 😂 1";
+            if (rire.textContent === " 😂 0") {
+                rire.textContent = " 😂 1";
+            } else {
+                rire.textContent = " 😂 0";
+            }
         });
         reactions.appendChild(coeur);
         reactions.appendChild(pouce);
@@ -40,5 +52,4 @@ formulaire.addEventListener("submit", function(event) {
         zoneMessages.appendChild(reactions);
         champMessage.value = "";
     }
-
 });
