@@ -17,6 +17,10 @@ heure.textContent =
     ":" +
     maintenant.getMinutes().toString().padStart(2, "0");
 zoneMessages.appendChild(heure);
+        const reactions = document.createElement("p");
+reactions.classList.add("reactions");
+reactions.textContent = "❤️ 0 👍 0 😂 0";
+zoneMessages.appendChild(reactions);
         champMessage.value = "";
     }
 });
