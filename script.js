@@ -9,6 +9,14 @@ formulaire.addEventListener("submit", function(event) {
         nouveauMessage.classList.add("envoye");
         nouveauMessage.textContent = "Moi : " + texte;
         zoneMessages.appendChild(nouveauMessage);
+        const heure = document.createElement("p");
+heure.classList.add("heure");
+const maintenant = new Date();
+heure.textContent =
+    maintenant.getHours().toString().padStart(2, "0") +
+    ":" +
+    maintenant.getMinutes().toString().padStart(2, "0");
+zoneMessages.appendChild(heure);
         champMessage.value = "";
     }
 });
