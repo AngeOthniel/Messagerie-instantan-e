@@ -10,7 +10,7 @@ const zoneMessages = document.querySelector(".messages");
 // Pour charger les messages déjà enregistrés dans Supabase
 async function chargerMessages() {
     const { data, error } = await supabaseClient
-        .from("messages")
+        .from("Messages")
         .select("*")
         .order("created_at", { ascending: true });
     if (error) {
