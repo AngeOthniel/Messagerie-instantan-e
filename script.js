@@ -13,7 +13,7 @@ formulaire.addEventListener("submit", async function(event) {
     if (texte !== "") {
         // Pour enregistrer le message dans Supabase
         const { error } = await supabaseClient
-            .from("Messagerie Web")
+            .from("message")
             .insert([
                 {
                     utilisateur: "Moi",
