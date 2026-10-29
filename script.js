@@ -1,3 +1,9 @@
+const SUPABASE_URL = "https://jgrkstljspxdtlzjpctl.supabase.co/rest/v1/";
+const SUPABASE_KEY = "sb_publishable_nf94UzHaEObI95un5Pjp0g_01HPTysa";
+const supabaseClient = supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
 const formulaire = document.querySelector("form");
 const champMessage = document.querySelector("#message");
 const zoneMessages = document.querySelector(".messages");
