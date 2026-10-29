@@ -11,7 +11,7 @@ formulaire.addEventListener("submit", async function(event) {
     event.preventDefault();
     const texte = champMessage.value;
     if (texte !== "") {
-        // Enregistrer le message dans Supabase
+        // Pour enregistrer le message dans Supabase
         const { error } = await supabaseClient
             .from("Messagerie Web")
             .insert([
@@ -24,12 +24,12 @@ formulaire.addEventListener("submit", async function(event) {
             console.log("Erreur Supabase :", error);
             return;
         }
-        // Créer le message dans la page
+        // Pour créer le message dans la page
         const nouveauMessage = document.createElement("p");
         nouveauMessage.classList.add("envoye");
         nouveauMessage.textContent = "Moi : " + texte;
         zoneMessages.appendChild(nouveauMessage);
-        // Ajouter l'heure
+        // Pour ajouter l'heure
         const heure = document.createElement("p");
         heure.classList.add("heure");
         const maintenant = new Date();
@@ -38,7 +38,7 @@ formulaire.addEventListener("submit", async function(event) {
             ":" +
             maintenant.getMinutes().toString().padStart(2, "0");
         zoneMessages.appendChild(heure);
-        // Créer les réactions
+        // Pour créer les réactions
         const reactions = document.createElement("p");
         reactions.classList.add("reactions");
         const coeur = document.createElement("span");
@@ -47,7 +47,7 @@ formulaire.addEventListener("submit", async function(event) {
         pouce.textContent = " 👍 0";
         const rire = document.createElement("span");
         rire.textContent = " 😂 0";
-        // Réaction coeur
+        // Pour les réactions coeur
         coeur.addEventListener("click", function() {
             if (coeur.textContent === "❤️ 0") {
                 coeur.textContent = "❤️ 1";
@@ -55,7 +55,7 @@ formulaire.addEventListener("submit", async function(event) {
                 coeur.textContent = "❤️ 0";
             }
         });
-        // Réaction pouce
+        // Pour les réactions pouce
         pouce.addEventListener("click", function() {
             if (pouce.textContent === " 👍 0") {
                 pouce.textContent = " 👍 1";
@@ -63,7 +63,7 @@ formulaire.addEventListener("submit", async function(event) {
                 pouce.textContent = " 👍 0";
             }
         });
-        // Réaction rire
+        // Pour les réactions rire
         rire.addEventListener("click", function() {
             if (rire.textContent === " 😂 0") {
                 rire.textContent = " 😂 1";
@@ -75,7 +75,7 @@ formulaire.addEventListener("submit", async function(event) {
         reactions.appendChild(pouce);
         reactions.appendChild(rire);
         zoneMessages.appendChild(reactions);
-        // Vider le champ après l'envoi
+        // Pour vider le champ après l'envoi
         champMessage.value = "";
     }
 
