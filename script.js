@@ -40,7 +40,7 @@ formulaire.addEventListener("submit", async function(event) {
     if (texte !== "") {
         // Pour enregistrer dans Supabase
         const { error } = await supabaseClient
-            .from("messages")
+            .from("Messages")
             .insert([
                 {
                     utilisateur: "Moi",
