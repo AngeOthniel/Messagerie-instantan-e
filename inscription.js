@@ -10,7 +10,7 @@ formulaire.addEventListener("submit", async function(event) {
     const prenom = document.querySelector("#prenom").value.trim();
     const nom = document.querySelector("#nom").value.trim();
     const email = document.querySelector("#email").value.trim();
-    const motDePasse = document.querySelector("#motdepasse").value;
+    const motDePasse = document.querySelector("#password").value;
     const confirmation = document.querySelector("#confirmation").value;
     if (motDePasse !== confirmation) {
         alert("Les mots de passe ne correspondent pas.");
