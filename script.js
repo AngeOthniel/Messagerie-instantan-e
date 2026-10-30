@@ -7,13 +7,31 @@ const supabaseClient = supabase.createClient(
 const formulaire = document.querySelector("form");
 const champMessage = document.querySelector("#message");
 const zoneMessages = document.querySelector(".messages");
-// Fonction pour afficher un message
+let utilisateurConnecte = null;
+// Afficher un message
 function afficherMessage(message) {
     const nouveauMessage = document.createElement("p");
-    nouveauMessage.classList.add("envoye");
-    nouveauMessage.textContent =
-        message.utilisateur + " : " + message.contenu;
+    // Si le message appartient à l'utilisateur connecté
+    if (
+        utilisateurConnecte &&
+        message.user_id === utilisateurConnecte.id
+    ) {
+        nouveauMessage.classList.add("envoye");
+        nouveauMessage.textContent = "Moi : " + message.contenu;
+    }
+    // Ancien message sans user_id
+    else if (message.user_id === null && message.utilisateur === "Moi") {
+        nouveauMessage.classList.add("envoye");
+        nouveauMessage.textContent = "Moi : " + message.contenu;
+    }
+    // Message envoyé par une autre personne
+    else {
+        nouveauMessage.classList.add("recu");
+        nouveauMessage.textContent =
+            message.utilisateur + " : " + message.contenu;
+    }
     zoneMessages.appendChild(nouveauMessage);
+    // Heure du message
     const heure = document.createElement("p");
     heure.classList.add("heure");
     const date = new Date(message.created_at);
@@ -57,7 +75,7 @@ function afficherMessage(message) {
     reactions.appendChild(rire);
     zoneMessages.appendChild(reactions);
 }
-// Charger les anciens messages depuis Supabase
+// Charger les anciens messages
 async function chargerMessages() {
     const { data, error } = await supabaseClient
         .from("Messages")
@@ -67,50 +85,78 @@ async function chargerMessages() {
         console.log("Erreur chargement :", error);
         return;
     }
+    zoneMessages.innerHTML = "";
     data.forEach(function(message) {
         afficherMessage(message);
     });
 }
-// Envoyer un nouveau message
+// Envoyer un message
 formulaire.addEventListener("submit", async function(event) {
     event.preventDefault();
     const texte = champMessage.value.trim();
     if (texte === "") {
         return;
     }
+    if (!utilisateurConnecte) {
+        alert("Vous devez être connecté.");
+        window.location.href = "index.html";
+        return;
+    }
+    // Récupérer le prénom enregistré lors de l'inscription
+    const prenom =
+        utilisateurConnecte.user_metadata.prenom ||
+        utilisateurConnecte.email;
     const { error } = await supabaseClient
         .from("Messages")
         .insert([
             {
-                utilisateur: "Moi",
-                contenu: texte
+                utilisateur: prenom,
+                contenu: texte,
+                user_id: utilisateurConnecte.id
             }
         ]);
     if (error) {
         console.log("Erreur Supabase :", error);
         return;
     }
-    // On ne l'affiche PAS ici.
-    // Realtime va le recevoir et l'afficher.
+    // Realtime affichera le message
     champMessage.value = "";
 });
-// Écouter les nouveaux messages en temps réel
-const canalMessages = supabaseClient
-    .channel("messages-realtime")
-    .on(
-        "postgres_changes",
-        {
-            event: "INSERT",
-            schema: "public",
-            table: "Messages"
-        },
-        function(payload) {
-            const nouveauMessage = payload.new;
-            afficherMessage(nouveauMessage);
-        }
-    )
-    .subscribe(function(status) {
-        console.log("Realtime :", status);
-    });
-// Charger les messages quand la page s'ouvre
-chargerMessages();
+// Realtime
+function activerRealtime() {
+    supabaseClient
+        .channel("messages-realtime")
+        .on(
+            "postgres_changes",
+            {
+                event: "INSERT",
+                schema: "public",
+                table: "Messages"
+            },
+            function(payload) {
+                afficherMessage(payload.new);
+            }
+        )
+        .subscribe(function(status) {
+            console.log("Realtime :", status);
+        });
+}
+// Vérifier l'utilisateur connecté
+async function demarrerMessagerie() {
+    const { data, error } =
+        await supabaseClient.auth.getUser();
+    if (error || !data.user) {
+        alert("Vous devez vous connecter.");
+        window.location.href = "index.html";
+        return;
+    }
+    utilisateurConnecte = data.user;
+    console.log(
+        "Utilisateur connecté :",
+        utilisateurConnecte.user_metadata.prenom
+    );
+    await chargerMessages();
+    activerRealtime();
+}
+// Démarrer
+demarrerMessagerie();
