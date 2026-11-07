@@ -8,25 +8,30 @@ const formulaire = document.querySelector("#formNouveauMotDePasse");
 const messageRetour = document.querySelector("#messageRetour");
 const bouton = formulaire.querySelector("button");
 let recuperationAutorisee = false;
-// Vérifier que l'utilisateur a ouvert un lien de récupération
+// Désactiver le bouton au départ
+bouton.disabled = true;
+messageRetour.textContent = "Vérification du lien de récupération...";
+// Vérifier le lien avec Supabase
 supabaseClient.auth.onAuthStateChange(function(event, session) {
+    console.log("Événement Supabase :", event);
     if (event === "PASSWORD_RECOVERY" && session) {
         recuperationAutorisee = true;
+        bouton.disabled = false;
         messageRetour.textContent =
-            "Lien vérifié. Vous pouvez choisir un nouveau mot de passe.";
+            "Lien vérifié ! Vous pouvez choisir votre nouveau mot de passe.";
     }
 });
-// Empêcher l'utilisation avant la vérification du lien
-bouton.disabled = true;
+// Enregistrer le nouveau mot de passe
 formulaire.addEventListener("submit", async function(event) {
     event.preventDefault();
     if (!recuperationAutorisee) {
         messageRetour.textContent =
-            "Veuillez ouvrir le lien reçu par courriel.";
+            "Veuillez ouvrir un nouveau lien de récupération reçu par courriel.";
         return;
     }
     const password = document.querySelector("#password").value;
     const confirmation = document.querySelector("#confirmation").value;
+
     if (password !== confirmation) {
         messageRetour.textContent =
             "Les mots de passe ne correspondent pas.";
@@ -37,22 +42,29 @@ formulaire.addEventListener("submit", async function(event) {
             "Le mot de passe doit contenir au moins 6 caractères.";
         return;
     }
-    const { error } = await supabaseClient.auth.updateUser({
-        password: password
-    });
-    if (error) {
-        messageRetour.textContent = "Erreur : " + error.message;
-        return;
+    bouton.disabled = true;
+    messageRetour.textContent = "Modification en cours...";
+    try {
+        const { error } = await supabaseClient.auth.updateUser({
+            password: password
+        });
+        if (error) {
+            throw error;
+        }
+        recuperationAutorisee = false;
+        const { error: erreurDeconnexion } =
+            await supabaseClient.auth.signOut();
+        if (erreurDeconnexion) {
+            console.error("Erreur déconnexion :", erreurDeconnexion);
+        }
+        messageRetour.textContent =
+            "Mot de passe modifié avec succès ! Retournez à la connexion.";
+        formulaire.reset();
+    } catch (error) {
+        console.error("Erreur Supabase :", error);
+        messageRetour.textContent =
+            "Erreur : " + error.message;
+        bouton.disabled = !recuperationAutorisee;
     }
-    recuperationAutorisee = false;
-    messageRetour.textContent =
-        "Mot de passe modifié avec succès !";
-    await supabaseClient.auth.signOut();
-    window.location.href = "index.html";
-});
-// Activer le formulaire seulement après vérification
-supabaseClient.auth.onAuthStateChange(function(event, session) {
-    if (event === "PASSWORD_RECOVERY" && session) {
-        bouton.disabled = false;
-    }
+
 });
