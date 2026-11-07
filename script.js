@@ -8,72 +8,160 @@ const formulaire = document.querySelector("form");
 const champMessage = document.querySelector("#message");
 const zoneMessages = document.querySelector(".messages");
 let utilisateurConnecte = null;
+let reactionsEnregistrees = [];
 // Afficher un message
 function afficherMessage(message) {
+    // Éviter les messages en double
+    if (document.getElementById("msg-" + message.id)) {
+        return;
+    }
+    const bloc = document.createElement("div");
+    bloc.id = "msg-" + message.id;
     const nouveauMessage = document.createElement("p");
-    // Si le message appartient à l'utilisateur connecté
     if (
         utilisateurConnecte &&
         message.user_id === utilisateurConnecte.id
     ) {
         nouveauMessage.classList.add("envoye");
         nouveauMessage.textContent = "Moi : " + message.contenu;
-    }
-    // Ancien message sans user_id
-    else if (message.user_id === null && message.utilisateur === "Moi") {
+    } else if (
+        message.user_id === null &&
+        message.utilisateur === "Moi"
+    ) {
+        // Compatibilité avec les anciens messages
         nouveauMessage.classList.add("envoye");
         nouveauMessage.textContent = "Moi : " + message.contenu;
-    }
-    // Message envoyé par une autre personne
-    else {
+    } else {
         nouveauMessage.classList.add("recu");
         nouveauMessage.textContent =
             message.utilisateur + " : " + message.contenu;
     }
-    zoneMessages.appendChild(nouveauMessage);
-    // Heure du message
+    bloc.appendChild(nouveauMessage);
+    // Afficher l'heure
     const heure = document.createElement("p");
     heure.classList.add("heure");
     const date = new Date(message.created_at);
-    heure.textContent =
-        date.getHours().toString().padStart(2, "0") +
-        ":" +
-        date.getMinutes().toString().padStart(2, "0");
-    zoneMessages.appendChild(heure);
-    // Réactions
-    const reactions = document.createElement("p");
-    reactions.classList.add("reactions");
-    const coeur = document.createElement("span");
-    coeur.textContent = "❤️ 0";
-    const pouce = document.createElement("span");
-    pouce.textContent = " 👍 0";
-    const rire = document.createElement("span");
-    rire.textContent = " 😂 0";
-    coeur.addEventListener("click", function() {
-        if (coeur.textContent === "❤️ 0") {
-            coeur.textContent = "❤️ 1";
-        } else {
-            coeur.textContent = "❤️ 0";
-        }
+    heure.textContent = date.toLocaleTimeString("fr-CA", {
+        hour: "2-digit",
+        minute: "2-digit"
     });
-    pouce.addEventListener("click", function() {
-        if (pouce.textContent === " 👍 0") {
-            pouce.textContent = " 👍 1";
-        } else {
-            pouce.textContent = " 👍 0";
-        }
+    bloc.appendChild(heure);
+    // Zone des réactions
+    const zoneReactions = document.createElement("p");
+    zoneReactions.classList.add("reactions");
+    const emojis = ["❤️", "👍", "😂"];
+    emojis.forEach(function(emoji) {
+        const bouton = document.createElement("button");
+        bouton.type = "button";
+        bouton.dataset.emoji = emoji;
+        bouton.style.marginRight = "10px";
+        bouton.style.cursor = "pointer";
+        bouton.style.background = "transparent";
+        bouton.style.border = "none";
+        bouton.style.fontSize = "16px";
+        bouton.textContent = emoji + " 0";
+        bouton.addEventListener("click", async function() {
+            bouton.disabled = true;
+            try {
+                await gererReaction(message.id, emoji);
+            } finally {
+                bouton.disabled = false;
+            }
+        });
+        zoneReactions.appendChild(bouton);
     });
-    rire.addEventListener("click", function() {
-        if (rire.textContent === " 😂 0") {
-            rire.textContent = " 😂 1";
-        } else {
-            rire.textContent = " 😂 0";
-        }
+    bloc.appendChild(zoneReactions);
+    zoneMessages.appendChild(bloc);
+    actualiserReactionsDuMessage(message.id);
+}
+// Charger les réactions depuis Supabase
+async function chargerReactions() {
+    const { data, error } = await supabaseClient
+        .from("reactions")
+        .select("id, message_id, user_id, emoji");
+    if (error) {
+        console.error("Erreur chargement réactions :", error);
+        return;
+    }
+    reactionsEnregistrees = data || [];
+    // Actualiser les réactions de tous les messages
+    document.querySelectorAll("[id^='msg-']").forEach(function(bloc) {
+        const id = Number(bloc.id.substring(4));
+        actualiserReactionsDuMessage(id);
     });
-    reactions.appendChild(coeur);
-    reactions.appendChild(pouce);
-    reactions.appendChild(rire);
-    zoneMessages.appendChild(reactions);
+}
+// Actualiser les compteurs d'un message
+function actualiserReactionsDuMessage(messageId) {
+    const bloc = document.getElementById("msg-" + messageId);
+    if (!bloc) {
+        return;
+    }
+    const boutons = bloc.querySelectorAll(
+        ".reactions button"
+    );
+    boutons.forEach(function(bouton) {
+        const emoji = bouton.dataset.emoji;
+        const reactions = reactionsEnregistrees.filter(
+            function(reaction) {
+                return (
+                    reaction.message_id === messageId &&
+                    reaction.emoji === emoji
+                );
+            }
+        );
+        const dejaReagi = reactions.some(function(reaction) {
+            return (
+                utilisateurConnecte &&
+                reaction.user_id === utilisateurConnecte.id
+            );
+        });
+        bouton.textContent = emoji + " " + reactions.length;
+        bouton.style.fontWeight =
+            dejaReagi ? "bold" : "normal";
+    });
+}
+// Ajouter ou supprimer sa propre réaction
+async function gererReaction(messageId, emoji) {
+    if (!utilisateurConnecte) {
+        alert("Vous devez être connecté.");
+        return;
+    }
+    const reactionExistante = reactionsEnregistrees.find(
+        function(reaction) {
+            return (
+                reaction.message_id === messageId &&
+                reaction.emoji === emoji &&
+                reaction.user_id === utilisateurConnecte.id
+            );
+        }
+    );
+    let error;
+    if (reactionExistante) {
+        // Retirer sa réaction
+        const resultat = await supabaseClient
+            .from("reactions")
+            .delete()
+            .eq("id", reactionExistante.id)
+            .eq("user_id", utilisateurConnecte.id);
+        error = resultat.error;
+    } else {
+        // Ajouter sa réaction
+        const resultat = await supabaseClient
+            .from("reactions")
+            .insert({
+                message_id: messageId,
+                user_id: utilisateurConnecte.id,
+                emoji: emoji
+            });
+        error = resultat.error;
+    }
+    if (error) {
+        console.error("Erreur réaction :", error);
+        alert("Impossible d'enregistrer la réaction.");
+        return;
+    }
+    // Mettre à jour immédiatement notre écran
+    await chargerReactions();
 }
 // Charger les anciens messages
 async function chargerMessages() {
@@ -82,7 +170,7 @@ async function chargerMessages() {
         .select("*")
         .order("created_at", { ascending: true });
     if (error) {
-        console.log("Erreur chargement :", error);
+        console.error("Erreur chargement messages :", error);
         return;
     }
     zoneMessages.innerHTML = "";
@@ -102,30 +190,27 @@ formulaire.addEventListener("submit", async function(event) {
         window.location.href = "index.html";
         return;
     }
-    // Récupérer le prénom enregistré lors de l'inscription
     const prenom =
-        utilisateurConnecte.user_metadata.prenom ||
+        utilisateurConnecte.user_metadata?.prenom ||
         utilisateurConnecte.email;
     const { error } = await supabaseClient
         .from("Messages")
-        .insert([
-            {
-                utilisateur: prenom,
-                contenu: texte,
-                user_id: utilisateurConnecte.id
-            }
-        ]);
+        .insert([{
+            utilisateur: prenom,
+            contenu: texte,
+            user_id: utilisateurConnecte.id
+        }]);
     if (error) {
-        console.log("Erreur Supabase :", error);
+        console.error("Erreur Supabase :", error);
+        alert("Impossible d'envoyer le message.");
         return;
     }
-    // Realtime affichera le message
     champMessage.value = "";
 });
-// Realtime
+// Activer les mises à jour en temps réel
 function activerRealtime() {
     supabaseClient
-        .channel("messages-realtime")
+        .channel("messagerie-realtime")
         .on(
             "postgres_changes",
             {
@@ -135,6 +220,17 @@ function activerRealtime() {
             },
             function(payload) {
                 afficherMessage(payload.new);
+            }
+        )
+        .on(
+            "postgres_changes",
+            {
+                event: "*",
+                schema: "public",
+                table: "reactions"
+            },
+            async function() {
+                await chargerReactions();
             }
         )
         .subscribe(function(status) {
@@ -153,22 +249,30 @@ async function demarrerMessagerie() {
     utilisateurConnecte = data.user;
     console.log(
         "Utilisateur connecté :",
-        utilisateurConnecte.user_metadata.prenom
+        utilisateurConnecte.user_metadata?.prenom
     );
+    await chargerReactions();
     await chargerMessages();
     activerRealtime();
 }
 // Démarrer
 demarrerMessagerie();
-// Déconnexion de l'utilisateur
-const boutonDeconnexion = document.querySelector("#deconnexion");
-boutonDeconnexion.addEventListener("click", async function(event) {
-    event.preventDefault();
-    const { error } = await supabaseClient.auth.signOut();
-    if (error) {
-        console.log("Erreur de déconnexion :", error);
-        alert("Impossible de se déconnecter.");
-        return;
-    }
-    window.location.href = "index.html";
-});
+// Déconnexion
+const boutonDeconnexion =
+    document.querySelector("#deconnexion");
+if (boutonDeconnexion) {
+    boutonDeconnexion.addEventListener(
+        "click",
+        async function(event) {
+            event.preventDefault();
+            const { error } =
+                await supabaseClient.auth.signOut();
+            if (error) {
+                console.error("Erreur déconnexion :", error);
+                alert("Impossible de se déconnecter.");
+                return;
+            }
+            window.location.href = "index.html";
+        }
+    );
+}
