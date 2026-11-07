@@ -81,8 +81,10 @@ a {
 .reactions {
     display: flex;
     flex-direction: row;
+    justify-content: center;
     align-items: center;
-    gap: 12px;
+    gap: 20px;
+    width: 100%;
     margin: 8px 0 16px;
 }
 .reactions button {
