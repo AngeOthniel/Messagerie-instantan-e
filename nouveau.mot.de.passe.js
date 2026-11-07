@@ -6,6 +6,7 @@ const supabaseClient = supabase.createClient(
 );
 const formulaire = document.querySelector("#formNouveauMotDePasse");
 const messageRetour = document.querySelector("#messageRetour");
+messageRetour.textContent = "JavaScript chargé correctement !";
 const bouton = formulaire.querySelector("button");
 let recuperationAutorisee = false;
 // Désactiver le bouton au départ
