@@ -160,3 +160,15 @@ async function demarrerMessagerie() {
 }
 // Démarrer
 demarrerMessagerie();
+// Déconnexion de l'utilisateur
+const boutonDeconnexion = document.querySelector("#deconnexion");
+boutonDeconnexion.addEventListener("click", async function(event) {
+    event.preventDefault();
+    const { error } = await supabaseClient.auth.signOut();
+    if (error) {
+        console.log("Erreur de déconnexion :", error);
+        alert("Impossible de se déconnecter.");
+        return;
+    }
+    window.location.href = "index.html";
+});
