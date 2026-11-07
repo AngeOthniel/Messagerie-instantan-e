@@ -77,3 +77,29 @@ a {
 .reactions {
     font-size: 14px;
 }
+/* Réactions sous les messages */
+.reactions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    margin: 8px 0 16px;
+}
+.reactions button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    min-width: 55px;
+    padding: 5px 8px;
+    margin: 0;
+    background: transparent;
+    border: none;
+    color: #333;
+    font-size: 16px;
+    cursor: pointer;
+}
+.reactions button:hover {
+    background: #f0e7ff;
+    border-radius: 8px;
+}
