@@ -76,7 +76,7 @@ console.log("Erreur Supabase :", error);
         }
         // Ouvrir la conversation choisie
         window.location.href =
-            "conversation.html?conversation_id=" +
+            "prive.html?conversation_id=" +
             encodeURIComponent(conversationId);
     } catch (error) {
         console.error("Erreur conversation :", error);
