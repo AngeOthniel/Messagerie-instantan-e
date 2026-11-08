@@ -15,12 +15,15 @@ async function chargerContacts() {
         return;
     }
     const monId = authData.user.id;
+    console.log("Utilisateur connecté :", monId);
     // Récupérer les profils
     const { data: profils, error } = await supabaseClient
         .from("profils")
         .select("id, prenom")
         .neq("id", monId)
         .order("prenom");
+    console.log("Profils récupérés :", profils);
+console.log("Erreur Supabase :", error);
     if (error) {
         console.error(error);
         messageRetour.textContent =
