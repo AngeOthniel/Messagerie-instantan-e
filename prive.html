@@ -21,9 +21,7 @@
     <main class="page-prive">
 
         <div class="entete-prive">
-            <div id="avatarPrive" class="avatar-contact">
-                ?
-            </div>
+            <div id="avatarPrive" class="avatar-contact">?</div>
 
             <div>
                 <h2 id="nomContact">Chargement...</h2>
@@ -31,8 +29,7 @@
                     Discussion privée 🔒
                 </p>
                 <p id="indicateurSaisie"
-                   class="indicateur-saisie"
-                   aria-live="polite"></p>
+                   class="indicateur-saisie"></p>
             </div>
         </div>
 
@@ -42,18 +39,45 @@
         </div>
 
         <form id="formPrive">
-            <input
-                type="text"
-                id="messagePrive"
-                placeholder="Écrire un message..."
-                maxlength="2000"
-                autocomplete="off"
-                required
-            >
 
-            <button type="submit" disabled>
-                Envoyer
-            </button>
+            <div class="ligne-envoi">
+                <label for="fichierPrive"
+                       class="bouton-joindre"
+                       title="Joindre un fichier">
+                    📎
+                </label>
+
+                <input
+                    type="file"
+                    id="fichierPrive"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    hidden
+                >
+
+                <input
+                    type="text"
+                    id="messagePrive"
+                    placeholder="Écrire un message..."
+                    maxlength="2000"
+                    autocomplete="off"
+                >
+
+                <button type="submit" id="boutonEnvoyerPrive"
+                        disabled>
+                    Envoyer
+                </button>
+            </div>
+
+            <div id="fichierSelectionne"
+                 class="fichier-selectionne"
+                 hidden>
+                <span id="nomFichierSelectionne"></span>
+                <button type="button"
+                        id="retirerFichier">
+                    ✕
+                </button>
+            </div>
+
         </form>
 
         <p id="messageRetour" role="status"></p>
