@@ -1,16 +1,30 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conversation</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conversation</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Messagerie instantanée</h1>
-    <a href="contact.html">Contacts</a>
-    <a href="parametre.html">Paramètres</a>
-    <a href="#" id="deconnexion">Déconnexion</a>
+<h1>Messagerie instantanée</h1>
+<nav aria-label="Navigation principale">
+<a href="contact.html">
+        👥 Contacts
+</a>
+<a href="conversation.html" class="actif">
+        🌍 Conversation générale
+</a>
+<a href="discussions.html">
+        💬 Mes discussions
+ </a>
+<a href="profil.html">
+        👤 Mon profil
+</a>
+<a href="#" id="deconnexion">
+        🚪 Déconnexion
+    </a>
+</nav>
    <h2>Conversation générale 🌍</h2>
     <p>Discutez avec tous les membres connectés</p>
     <!-- Les messages venant de Supabase apparaîtront ici -->
