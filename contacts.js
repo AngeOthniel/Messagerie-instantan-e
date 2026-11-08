@@ -42,13 +42,52 @@ console.log("Erreur Supabase :", error);
         nom.textContent = profil.prenom + " ";
         const bouton = document.createElement("button");
         bouton.textContent = "Discuter";
-        // Activation à la prochaine étape
-        bouton.disabled = true;
-        bouton.title = "Bientôt disponible";
+       bouton.addEventListener("click", async function() {
+    bouton.disabled = true;
+    messageRetour.textContent = "Ouverture de la conversation...";
+
+    try {
+        // Chercher une conversation existante
+        const { data: existantes, error: rechercheErreur } =
+            await supabaseClient
+                .from("conversations")
+                .select("id")
+                .or(
+                    `and(user1_id.eq.${monId},user2_id.eq.${profil.id}),` +
+                    `and(user1_id.eq.${profil.id},user2_id.eq.${monId})`
+                )
+                .limit(1);
+        if (rechercheErreur) throw rechercheErreur;
+        let conversationId;
+        if (existantes.length > 0) {
+            conversationId = existantes[0].id;
+        } else {
+            // Créer une nouvelle conversation
+            const { data, error } = await supabaseClient
+                .from("conversations")
+                .insert({
+                    user1_id: monId,
+                    user2_id: profil.id
+                })
+                .select("id")
+                .single();
+            if (error) throw error;
+            conversationId = data.id;
+        }
+        // Ouvrir la conversation choisie
+        window.location.href =
+            "conversation.html?conversation_id=" +
+            encodeURIComponent(conversationId);
+    } catch (error) {
+        console.error("Erreur conversation :", error);
+        messageRetour.textContent =
+            "Impossible d'ouvrir la conversation.";
+        bouton.disabled = false;
+    }
+});
         contact.appendChild(nom);
         contact.appendChild(bouton);
         listeContacts.appendChild(contact);
     });
 }
-
 chargerContacts();
