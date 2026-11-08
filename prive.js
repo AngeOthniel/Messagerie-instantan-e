@@ -4,13 +4,23 @@ const supabaseClient = supabase.createClient(
     SUPABASE_URL,
     SUPABASE_KEY
 );
-const zoneMessages = document.querySelector("#messagesPrives");
-const messageRetour = document.querySelector("#messageRetour");
-const titreContact = document.querySelector("#nomContact");
-const formulaire = document.querySelector("#formPrive");
-const champMessage = document.querySelector("#messagePrive");
-const boutonEnvoyer = formulaire.querySelector("button");
-const params = new URLSearchParams(window.location.search);
+const zoneMessages =
+    document.querySelector("#messagesPrives");
+const messageRetour =
+    document.querySelector("#messageRetour");
+const titreContact =
+    document.querySelector("#nomContact");
+const avatarPrive =
+    document.querySelector("#avatarPrive");
+const formulaire =
+    document.querySelector("#formPrive");
+const champMessage =
+    document.querySelector("#messagePrive");
+const boutonEnvoyer =
+    formulaire.querySelector("button");
+const params = new URLSearchParams(
+    window.location.search
+);
 const conversationId = params.get("conversation_id");
 const emojis = ["❤️", "👍", "😂"];
 let utilisateurConnecte = null;
@@ -20,14 +30,42 @@ let messages = [];
 let reactions = [];
 let chargementNumero = 0;
 let reactionEnCours = false;
-// Afficher les messages et réactions
+// Afficher l'avatar du contact
+async function afficherAvatarContact(profil) {
+    const prenom = profil?.prenom || "Utilisateur";
+    avatarPrive.replaceChildren();
+    avatarPrive.textContent =
+        prenom.charAt(0).toUpperCase();
+    if (!profil?.avatar_url) return;
+    const { data, error } = await supabaseClient
+        .storage
+        .from("avatars")
+        .createSignedUrl(profil.avatar_url, 3600);
+    if (error || !data?.signedUrl) {
+        console.error("Erreur avatar :", error);
+        return;
+    }
+    const image = document.createElement("img");
+    image.src = data.signedUrl;
+    image.alt = "Photo de " + prenom;
+    image.referrerPolicy = "no-referrer";
+    image.addEventListener("error", function() {
+        avatarPrive.replaceChildren();
+        avatarPrive.textContent =
+            prenom.charAt(0).toUpperCase();
+    });
+    avatarPrive.replaceChildren(image);
+}
+// Afficher les messages
 function afficherMessages() {
     zoneMessages.innerHTML = "";
     messages.forEach(function(message) {
         const bloc = document.createElement("div");
-        bloc.style.marginBottom = "20px";
+        bloc.classList.add("bloc-message-prive");
         const bulle = document.createElement("p");
-        if (message.user_id === utilisateurConnecte.id) {
+        const estMoi =
+            message.user_id === utilisateurConnecte.id;
+        if (estMoi) {
             bulle.classList.add("envoye");
             bulle.textContent = "Moi : " + message.contenu;
         } else {
@@ -38,56 +76,60 @@ function afficherMessages() {
         // Afficher l'heure
         const heure = document.createElement("p");
         heure.classList.add("heure");
-        const date = new Date(message.created_at);
-        heure.textContent = date.toLocaleTimeString("fr-CA", {
-            hour: "2-digit",
-            minute: "2-digit"
-        });
-        heure.style.textAlign = "center";
+        heure.textContent =
+            new Date(message.created_at)
+                .toLocaleTimeString("fr-CA", {
+                    hour: "2-digit",
+                    minute: "2-digit"
+                });
         bloc.appendChild(heure);
-        // Zone des réactions
-        const zoneReactions = document.createElement("div");
+        // Réactions sous le message
+        const zoneReactions =
+            document.createElement("div");
         zoneReactions.classList.add("reactions");
-        zoneReactions.style.display = "flex";
-        zoneReactions.style.justifyContent = "center";
-        zoneReactions.style.alignItems = "center";
-        zoneReactions.style.gap = "12px";
-        zoneReactions.style.margin = "8px 0";
+        zoneReactions.classList.add("reactions-privees");
         emojis.forEach(function(emoji) {
-            const liste = reactions.filter(function(reaction) {
-                return reaction.message_id === message.id &&
-                       reaction.emoji === emoji;
-            });
-            const maReaction = liste.find(function(reaction) {
-                return reaction.user_id === utilisateurConnecte.id;
-            });
+            const liste = reactions.filter(
+                function(reaction) {
+                    return (
+                        reaction.message_id === message.id &&
+                        reaction.emoji === emoji
+                    );
+                }
+            );
+            const maReaction = liste.find(
+                function(reaction) {
+                    return reaction.user_id ===
+                        utilisateurConnecte.id;
+                }
+            );
             const bouton = document.createElement("button");
             bouton.type = "button";
             bouton.textContent = emoji + " " + liste.length;
-            bouton.style.width = "auto";
-            bouton.style.padding = "5px 9px";
-            bouton.style.border = "none";
-            bouton.style.borderRadius = "8px";
-            bouton.style.cursor = "pointer";
-            bouton.style.fontSize = "15px";
-            bouton.style.color = "#222";
-            bouton.style.backgroundColor = maReaction
-                ? "#e9d5ff"
-                : "#f3f4f6";
+            bouton.classList.add("bouton-reaction-prive");
+            if (maReaction) {
+                bouton.classList.add("reaction-active");
+            }
             bouton.setAttribute(
                 "aria-pressed",
                 maReaction ? "true" : "false"
             );
             bouton.addEventListener("click", function() {
-                changerReaction(message.id, emoji, maReaction);
+                changerReaction(
+                    message.id,
+                    emoji,
+                    maReaction
+                );
             });
             zoneReactions.appendChild(bouton);
         });
         bloc.appendChild(zoneReactions);
         zoneMessages.appendChild(bloc);
     });
+    zoneMessages.scrollTop =
+        zoneMessages.scrollHeight;
 }
-// Charger les messages privés et réactions
+// Récupérer messages et réactions
 async function chargerMessages() {
     if (!conversationAutorisee) return false;
     const numero = ++chargementNumero;
@@ -105,9 +147,11 @@ async function chargerMessages() {
         return false;
     }
     const nouveauxMessages = data || [];
-    const ids = nouveauxMessages.map(function(message) {
-        return message.id;
-    });
+    const ids = nouveauxMessages.map(
+        function(message) {
+            return message.id;
+        }
+    );
     let nouvellesReactions = [];
     if (ids.length > 0) {
         const resultat = await supabaseClient
@@ -116,7 +160,10 @@ async function chargerMessages() {
             .in("message_id", ids);
         if (numero !== chargementNumero) return false;
         if (resultat.error) {
-            console.error("Erreur réactions :", resultat.error);
+            console.error(
+                "Erreur réactions :",
+                resultat.error
+            );
             messageRetour.textContent =
                 "Impossible de charger les réactions.";
             return false;
@@ -128,7 +175,7 @@ async function chargerMessages() {
     afficherMessages();
     return true;
 }
-// Enregistrer que la conversation a été lue
+// Enregistrer la lecture des messages
 async function marquerCommeLu() {
     if (!utilisateurConnecte || !conversationAutorisee) {
         return;
@@ -150,11 +197,9 @@ async function marquerCommeLu() {
         );
     if (error) {
         console.error("Erreur lecture :", error);
-    } else {
-        console.log("Conversation marquée comme lue");
     }
 }
-// Recharger et marquer comme lu si la page est visible
+// Mettre à jour la discussion
 async function actualiserConversation() {
     const charge = await chargerMessages();
     if (
@@ -165,7 +210,11 @@ async function actualiserConversation() {
     }
 }
 // Ajouter ou retirer une réaction
-async function changerReaction(messageId, emoji, maReaction) {
+async function changerReaction(
+    messageId,
+    emoji,
+    maReaction
+) {
     if (
         !conversationAutorisee ||
         !utilisateurConnecte ||
@@ -205,19 +254,19 @@ async function changerReaction(messageId, emoji, maReaction) {
         reactionEnCours = false;
     }
 }
-// Activer le temps réel
+// Écouter les nouveaux messages
 function activerRealtimePrive() {
     if (canalPrive) return;
     canalPrive = supabaseClient
         .channel("prive-" + conversationId)
-        // Nouveaux messages privés
         .on(
             "postgres_changes",
             {
                 event: "INSERT",
                 schema: "public",
                 table: "Messages",
-                filter: "conversation_id=eq." + conversationId
+                filter: "conversation_id=eq." +
+                    conversationId
             },
             async function() {
                 if (document.visibilityState === "visible") {
@@ -225,7 +274,7 @@ function activerRealtimePrive() {
                 }
             }
         )
-        // Réactions en temps réel
+
         .on(
             "postgres_changes",
             {
@@ -250,26 +299,29 @@ function activerRealtimePrive() {
             }
         });
 }
-// Lorsqu'on revient sur l'onglet
-document.addEventListener("visibilitychange", function() {
-    if (
-        document.visibilityState === "visible" &&
-        conversationAutorisee
-    ) {
-        actualiserConversation();
+// Actualiser au retour sur la page
+document.addEventListener(
+    "visibilitychange",
+    function() {
+        if (
+            document.visibilityState === "visible" &&
+            conversationAutorisee
+        ) {
+            actualiserConversation();
+        }
     }
-});
-// Vérifier et ouvrir la conversation
+);
+// Vérifier l'accès à la conversation
 async function demarrer() {
     boutonEnvoyer.disabled = true;
     const { data, error } =
         await supabaseClient.auth.getUser();
+
     if (error || !data.user) {
         window.location.href = "index.html";
         return;
     }
     utilisateurConnecte = data.user;
-
     if (
         !conversationId ||
         !/^[1-9]\d*$/.test(conversationId)
@@ -278,7 +330,8 @@ async function demarrer() {
             "Identifiant de conversation invalide.";
         return;
     }
-    const { data: conversation, error: erreurConversation } =
+    const { data: conversation,
+            error: erreurConversation } =
         await supabaseClient
             .from("conversations")
             .select("user1_id, user2_id")
@@ -298,7 +351,7 @@ async function demarrer() {
         return;
     }
     conversationAutorisee = true;
-    // Identifier le contact
+    // Identifier l'autre utilisateur
     const autreId =
         conversation.user1_id === monId
             ? conversation.user2_id
@@ -306,61 +359,65 @@ async function demarrer() {
     const { data: profil, error: erreurProfil } =
         await supabaseClient
             .from("profils")
-            .select("prenom")
+            .select("prenom, avatar_url")
             .eq("id", autreId)
             .single();
     if (erreurProfil) {
         console.error("Erreur profil :", erreurProfil);
     }
+    const prenom = profil?.prenom || "Utilisateur";
     titreContact.textContent =
-        "Conversation avec " +
-        (profil?.prenom || "Utilisateur");
-    // Charger les messages et marquer comme lu
+        "Conversation avec " + prenom;
+    await afficherAvatarContact(profil);
+    // Charger les messages
     await actualiserConversation();
-    // Activer la réception automatique
+    // Écouter les nouveaux messages
     activerRealtimePrive();
     boutonEnvoyer.disabled = false;
     messageRetour.textContent = "";
 }
-// Envoyer un message privé
-formulaire.addEventListener("submit", async function(event) {
-    event.preventDefault();
-    if (
-        !utilisateurConnecte ||
-        !conversationAutorisee ||
-        boutonEnvoyer.disabled
-    ) {
-        return;
+// Envoyer un message
+formulaire.addEventListener(
+    "submit",
+    async function(event) {
+        event.preventDefault();
+        if (
+            !utilisateurConnecte ||
+            !conversationAutorisee ||
+            boutonEnvoyer.disabled
+        ) {
+            return;
+        }
+        const texte = champMessage.value.trim();
+        if (!texte) return;
+        boutonEnvoyer.disabled = true;
+        const { error } = await supabaseClient
+            .from("Messages")
+            .insert({
+                utilisateur:
+                    utilisateurConnecte
+                        .user_metadata?.prenom ||
+                    "Utilisateur",
+                contenu: texte,
+                user_id: utilisateurConnecte.id,
+                conversation_id: Number(conversationId)
+            });
+        if (error) {
+            console.error("Erreur envoi :", error);
+            messageRetour.textContent =
+                "Impossible d'envoyer le message.";
+        } else {
+            champMessage.value = "";
+            messageRetour.textContent = "";
+            await actualiserConversation();
+        }
+        boutonEnvoyer.disabled = false;
     }
-    const texte = champMessage.value.trim();
-    if (!texte) return;
-    boutonEnvoyer.disabled = true;
-    const { error } = await supabaseClient
-        .from("Messages")
-        .insert({
-            utilisateur:
-                utilisateurConnecte.user_metadata?.prenom ||
-                "Utilisateur",
-            contenu: texte,
-            user_id: utilisateurConnecte.id,
-            conversation_id: Number(conversationId)
-        });
-    if (error) {
-        console.error("Erreur envoi :", error);
-        messageRetour.textContent =
-            "Impossible d'envoyer le message.";
-    } else {
-        champMessage.value = "";
-        messageRetour.textContent = "";
-        await actualiserConversation();
-    }
-    boutonEnvoyer.disabled = false;
-});
-// Nettoyer le canal en quittant la page
+);
+// Nettoyer le canal à la fermeture
 window.addEventListener("pagehide", function() {
     if (canalPrive) {
         supabaseClient.removeChannel(canalPrive);
     }
 });
-// Démarrer
 demarrer();
