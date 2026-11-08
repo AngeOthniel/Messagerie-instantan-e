@@ -9,7 +9,20 @@ const messageRetour = document.querySelector("#messageRetour");
 let monId = null;
 let canalDiscussions = null;
 let numeroChargement = 0;
-// Charger les discussions et compter les messages non lus
+// Charger une photo privée depuis Supabase Storage
+async function obtenirPhoto(chemin) {
+    if (!chemin) return null;
+    const { data, error } = await supabaseClient
+        .storage
+        .from("avatars")
+        .createSignedUrl(chemin, 3600);
+    if (error) {
+        console.error("Erreur avatar :", error);
+        return null;
+    }
+    return data?.signedUrl || null;
+}
+// Charger les conversations
 async function chargerDiscussions() {
     if (!monId) return;
     const numero = ++numeroChargement;
@@ -31,34 +44,35 @@ async function chargerDiscussions() {
             "Vous n'avez pas encore de conversation privée.";
         return;
     }
-    // Récupérer les informations de chaque conversation
     const discussions = await Promise.all(
         conversations.map(async function(conversation) {
             const autreId =
                 conversation.user1_id === monId
                     ? conversation.user2_id
                     : conversation.user1_id;
-            // Prénom du contact
+            // Récupérer le prénom et la photo du contact
             const { data: profil, error: erreurProfil } =
                 await supabaseClient
                     .from("profils")
-                    .select("prenom")
+                    .select("prenom, avatar_url")
                     .eq("id", autreId)
                     .single();
             if (erreurProfil) {
                 console.error("Erreur profil :", erreurProfil);
             }
-            // Dernier message
+            const prenom = profil?.prenom || "Utilisateur";
+            const photo = await obtenirPhoto(profil?.avatar_url);
+            // Dernier message de la conversation
             const { data: messages, error: erreurMessage } =
                 await supabaseClient
                     .from("Messages")
-                    .select("contenu, created_at")
+                    .select("id, contenu, created_at")
                     .eq("conversation_id", conversation.id)
                     .order("created_at", { ascending: false })
                     .order("id", { ascending: false })
                     .limit(1);
             if (erreurMessage) throw erreurMessage;
-            // Dernière date de lecture de mon compte
+            // Dernière date de lecture
             const { data: lecture, error: erreurLecture } =
                 await supabaseClient
                     .from("conversation_reads")
@@ -67,7 +81,7 @@ async function chargerDiscussions() {
                     .eq("user_id", monId)
                     .maybeSingle();
             if (erreurLecture) throw erreurLecture;
-            // Compter uniquement les messages des autres
+            // Compter les messages reçus non lus
             let requeteCompteur = supabaseClient
                 .from("Messages")
                 .select("id", {
@@ -76,7 +90,6 @@ async function chargerDiscussions() {
                 })
                 .eq("conversation_id", conversation.id)
                 .neq("user_id", monId);
-            // Si déjà lu : compter les messages plus récents
             if (lecture) {
                 requeteCompteur = requeteCompteur.gt(
                     "created_at",
@@ -96,14 +109,15 @@ async function chargerDiscussions() {
                     : conversation.created_at;
             return {
                 id: conversation.id,
-                prenom: profil?.prenom || "Utilisateur",
+                prenom: prenom,
+                photo: photo,
                 dernierMessage: dernierMessage,
                 date: date,
                 nonLus: count || 0
             };
         })
     ).catch(function(erreur) {
-        console.error("Erreur discussions :", erreur);
+        console.error("Erreur chargement :", erreur);
         return null;
     });
     if (numero !== numeroChargement) return;
@@ -112,7 +126,7 @@ async function chargerDiscussions() {
             "Impossible de charger les discussions.";
         return;
     }
-    // Trier les conversations par activité récente
+    // Conversations les plus récentes en premier
     discussions.sort(function(a, b) {
         return new Date(b.date) - new Date(a.date);
     });
@@ -120,13 +134,36 @@ async function chargerDiscussions() {
     discussions.forEach(function(discussion) {
         const carte = document.createElement("div");
         carte.classList.add("carte-discussion");
+        // Zone contenant la photo et le prénom
+        const entete = document.createElement("div");
+        entete.classList.add("entete-discussion");
+        const avatar = document.createElement("div");
+        avatar.classList.add("avatar-discussion");
+        if (discussion.photo) {
+            const image = document.createElement("img");
+            image.src = discussion.photo;
+            image.alt = "Photo de " + discussion.prenom;
+            image.loading = "lazy";
+            image.referrerPolicy = "no-referrer";
+            image.addEventListener("error", function() {
+                avatar.textContent =
+                    discussion.prenom.charAt(0).toUpperCase();
+            });
+            avatar.appendChild(image);
+        } else {
+            avatar.textContent =
+                discussion.prenom.charAt(0).toUpperCase();
+        }
         const nom = document.createElement("h3");
         nom.textContent = discussion.prenom;
+        entete.appendChild(avatar);
+        entete.appendChild(nom);
+        carte.appendChild(entete);
+        // Aperçu du dernier message
         const dernierMessage = document.createElement("p");
         dernierMessage.textContent = discussion.dernierMessage;
-        carte.appendChild(nom);
         carte.appendChild(dernierMessage);
-        // Afficher le compteur s'il y a des messages non lus
+        // Compteur de messages non lus
         if (discussion.nonLus > 0) {
             const compteur = document.createElement("span");
             compteur.classList.add("compteur-non-lus");
@@ -136,6 +173,7 @@ async function chargerDiscussions() {
                     : discussion.nonLus + " non lus";
             carte.appendChild(compteur);
         }
+        // Bouton pour ouvrir le chat privé
         const bouton = document.createElement("button");
         bouton.type = "button";
         bouton.textContent = "Ouvrir la discussion";
@@ -149,11 +187,12 @@ async function chargerDiscussions() {
     });
     messageRetour.textContent = "";
 }
-// Recevoir les nouveaux messages en temps réel
+// Temps réel
 function activerRealtimeDiscussions() {
     if (canalDiscussions) return;
     canalDiscussions = supabaseClient
         .channel("liste-discussions-realtime")
+
         .on(
             "postgres_changes",
             {
@@ -165,7 +204,6 @@ function activerRealtimeDiscussions() {
                 chargerDiscussions();
             }
         )
-
         .on(
             "postgres_changes",
             {
@@ -181,13 +219,13 @@ function activerRealtimeDiscussions() {
             console.log("Realtime discussions :", status);
         });
 }
-// Actualiser quand l'utilisateur revient sur la page
+// Actualisation au retour sur l'onglet
 document.addEventListener("visibilitychange", function() {
     if (document.visibilityState === "visible") {
         chargerDiscussions();
     }
 });
-// Vérifier la connexion puis démarrer
+// Vérifier l'utilisateur connecté
 async function demarrerDiscussions() {
     messageRetour.textContent =
         "Chargement des discussions...";
@@ -201,11 +239,10 @@ async function demarrerDiscussions() {
     await chargerDiscussions();
     activerRealtimeDiscussions();
 }
-// Nettoyer le canal lorsque la page est quittée
+// Fermer le canal en quittant la page
 window.addEventListener("pagehide", function() {
     if (canalDiscussions) {
         supabaseClient.removeChannel(canalDiscussions);
     }
 });
-
 demarrerDiscussions();
