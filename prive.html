@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+    <title>Conversation privée</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Messagerie instantanée</h1>
+    <nav>
+        <a href="contact.html">Contacts</a>
+        <a href="conversation.html">Conversation générale</a>
+    </nav>
+    <h2 id="nomContact">Conversation privée</h2>
+    <div class="messages" id="messagesPrives"></div>
+    <h2>Envoyer un message</h2>
+    <form id="formPrive">
+        <label for="messagePrive">Message :</label>
+        <input
+            type="text"
+            id="messagePrive"
+            placeholder="Écrire un message..."
+            required
+        >
+        <button type="submit" disabled>
+            Envoyer
+        </button>
+    </form>
+    <p id="messageRetour">
+        Configuration de la conversation privée en cours.
+    </p>
+</body>
+</html>
