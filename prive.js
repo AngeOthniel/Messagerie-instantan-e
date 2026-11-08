@@ -4,19 +4,33 @@ const supabaseClient = supabase.createClient(
     SUPABASE_URL,
     SUPABASE_KEY
 );
-
 const zoneMessages = document.querySelector("#messagesPrives");
 const messageRetour = document.querySelector("#messageRetour");
 const titreContact = document.querySelector("#nomContact");
 const avatarPrive = document.querySelector("#avatarPrive");
 const indicateurSaisie = document.querySelector("#indicateurSaisie");
+
 const formulaire = document.querySelector("#formPrive");
 const champMessage = document.querySelector("#messagePrive");
-const boutonEnvoyer = formulaire.querySelector("button");
+const boutonEnvoyer = document.querySelector("#boutonEnvoyerPrive");
+const fichierPrive = document.querySelector("#fichierPrive");
+const fichierSelectionne = document.querySelector("#fichierSelectionne");
+const nomFichierSelectionne =
+    document.querySelector("#nomFichierSelectionne");
+const retirerFichier = document.querySelector("#retirerFichier");
 
 const params = new URLSearchParams(window.location.search);
 const conversationId = params.get("conversation_id");
+
 const emojis = ["❤️", "👍", "😂"];
+const MAX_FICHIER = 5 * 1024 * 1024;
+
+const formats = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "application/pdf": "pdf"
+};
 
 let utilisateurConnecte = null;
 let autreUtilisateurId = null;
@@ -25,19 +39,29 @@ let conversationAutorisee = false;
 
 let messages = [];
 let reactions = [];
+let piecesJointes = [];
 let derniereLectureContact = null;
-let chargementNumero = 0;
-let reactionEnCours = false;
 
 let canalPrive = null;
 let canalSaisie = null;
 let saisieConnectee = false;
+
+let chargementNumero = 0;
+let reactionEnCours = false;
+let envoiEnCours = false;
 let derniereEmissionSaisie = 0;
+
 let minuterieSaisieLocale = null;
 let minuterieSaisieDistante = null;
 let intervalleLecture = null;
 
-// Format de date locale
+// URLs temporaires des fichiers
+const cacheFichiers = new Map();
+
+// --------------------------------------------------
+// Dates et heures
+// --------------------------------------------------
+
 function cleJour(date) {
     const d = new Date(date);
 
@@ -70,7 +94,10 @@ function formaterJour(date) {
     });
 }
 
-// Afficher l'avatar du contact
+// --------------------------------------------------
+// Photos de profil
+// --------------------------------------------------
+
 async function afficherAvatarContact(profil) {
     const initiale = prenomContact.charAt(0).toUpperCase();
 
@@ -101,7 +128,90 @@ async function afficherAvatarContact(profil) {
     avatarPrive.replaceChildren(image);
 }
 
-// Vérifier si le contact a lu mon message
+// --------------------------------------------------
+// Pièces jointes privées
+// --------------------------------------------------
+
+async function obtenirLienFichier(chemin) {
+    const entree = cacheFichiers.get(chemin);
+
+    if (entree && entree.expiration > Date.now()) {
+        return entree.url;
+    }
+
+    const { data, error } = await supabaseClient
+        .storage
+        .from("chat-files")
+        .createSignedUrl(chemin, 3600);
+
+    if (error || !data?.signedUrl) {
+        console.error("Erreur lien fichier :", error);
+        return null;
+    }
+
+    cacheFichiers.set(chemin, {
+        url: data.signedUrl,
+        expiration: Date.now() + 50 * 60 * 1000
+    });
+
+    return data.signedUrl;
+}
+
+function afficherPieceJointe(piece, conteneur) {
+    const cadre = document.createElement("div");
+    cadre.className = "piece-jointe-message";
+
+    const texte = document.createElement("span");
+    texte.textContent = "Chargement du fichier...";
+    cadre.appendChild(texte);
+
+    conteneur.appendChild(cadre);
+
+    obtenirLienFichier(piece.file_path).then(function(url) {
+        if (!cadre.isConnected) return;
+
+        cadre.replaceChildren();
+
+        if (!url) {
+            cadre.textContent = "Fichier indisponible";
+            return;
+        }
+
+        if (piece.file_type.startsWith("image/")) {
+            const lien = document.createElement("a");
+            lien.href = url;
+            lien.target = "_blank";
+            lien.rel = "noopener noreferrer";
+
+            const image = document.createElement("img");
+            image.src = url;
+            image.alt = piece.file_name;
+            image.loading = "lazy";
+            image.referrerPolicy = "no-referrer";
+
+            lien.appendChild(image);
+            cadre.appendChild(lien);
+
+            const nom = document.createElement("p");
+            nom.textContent = piece.file_name;
+            cadre.appendChild(nom);
+
+        } else {
+            const lien = document.createElement("a");
+            lien.href = url;
+            lien.target = "_blank";
+            lien.rel = "noopener noreferrer";
+            lien.textContent = "📄 " + piece.file_name;
+
+            cadre.appendChild(lien);
+        }
+    });
+}
+
+// --------------------------------------------------
+// Statut de lecture
+// --------------------------------------------------
+
 function messageEstLu(message) {
     if (!derniereLectureContact) return false;
 
@@ -109,7 +219,68 @@ function messageEstLu(message) {
         new Date(derniereLectureContact).getTime();
 }
 
-// Afficher les bulles et réactions
+async function chargerLectureContact() {
+    if (!autreUtilisateurId || !conversationAutorisee) {
+        return;
+    }
+
+    const { data, error } = await supabaseClient
+        .from("conversation_reads")
+        .select("last_read_at")
+        .eq("conversation_id", Number(conversationId))
+        .eq("user_id", autreUtilisateurId)
+        .maybeSingle();
+
+    if (error) {
+        console.error("Erreur lecture contact :", error);
+        return;
+    }
+
+    derniereLectureContact = data?.last_read_at || null;
+
+    // Modifier seulement les confirmations de lecture
+    document.querySelectorAll(
+        ".statut-message[data-message-id]"
+    ).forEach(function(statut) {
+        const message = messages.find(function(m) {
+            return String(m.id) === statut.dataset.messageId;
+        });
+
+        if (!message) return;
+
+        const lu = messageEstLu(message);
+
+        statut.textContent = lu ? "✓✓ Lu" : "✓ Envoyé";
+        statut.classList.toggle("statut-lu", lu);
+    });
+}
+
+async function marquerCommeLu() {
+    if (
+        !utilisateurConnecte ||
+        !conversationAutorisee ||
+        document.visibilityState !== "visible"
+    ) return;
+
+    const { error } = await supabaseClient
+        .from("conversation_reads")
+        .upsert({
+            conversation_id: Number(conversationId),
+            user_id: utilisateurConnecte.id,
+            last_read_at: new Date().toISOString()
+        }, {
+            onConflict: "conversation_id,user_id"
+        });
+
+    if (error) {
+        console.error("Erreur lecture :", error);
+    }
+}
+
+// --------------------------------------------------
+// Affichage des messages
+// --------------------------------------------------
+
 function afficherMessages() {
     zoneMessages.replaceChildren();
 
@@ -124,7 +295,6 @@ function afficherMessages() {
             separateur.textContent = formaterJour(
                 message.created_at
             );
-
             zoneMessages.appendChild(separateur);
             dernierJour = jour;
         }
@@ -139,15 +309,25 @@ function afficherMessages() {
 
         const bulle = document.createElement("div");
         bulle.className = estMoi ? "envoye" : "recu";
-        bulle.textContent = message.contenu;
 
+        bulle.textContent = message.contenu;
         bloc.appendChild(bulle);
 
-        // Heure et confirmation de lecture
+        // Afficher la pièce jointe éventuelle
+        const piece = piecesJointes.find(function(p) {
+            return p.message_id === message.id;
+        });
+
+        if (piece) {
+            afficherPieceJointe(piece, bloc);
+        }
+
+        // Heure du message
         const informations = document.createElement("div");
         informations.className = "info-message";
 
         const heure = document.createElement("span");
+
         heure.textContent = new Date(
             message.created_at
         ).toLocaleTimeString("fr-CA", {
@@ -160,34 +340,31 @@ function afficherMessages() {
         if (estMoi) {
             const statut = document.createElement("span");
             statut.className = "statut-message";
+            statut.dataset.messageId = String(message.id);
 
             const lu = messageEstLu(message);
+            statut.textContent = lu ? "✓✓ Lu" : "✓ Envoyé";
 
-            statut.textContent = lu
-                ? "✓✓ Lu"
-                : "✓ Envoyé";
-
-            if (lu) {
-                statut.classList.add("statut-lu");
-            }
+            if (lu) statut.classList.add("statut-lu");
 
             informations.appendChild(statut);
         }
 
         bloc.appendChild(informations);
 
-        // Boutons de réactions
+        // Réactions
         const zoneReactions = document.createElement("div");
-        zoneReactions.className = "reactions reactions-privees";
+        zoneReactions.className =
+            "reactions reactions-privees";
 
         emojis.forEach(function(emoji) {
-            const liste = reactions.filter(function(reaction) {
-                return reaction.message_id === message.id &&
-                       reaction.emoji === emoji;
+            const liste = reactions.filter(function(r) {
+                return r.message_id === message.id &&
+                       r.emoji === emoji;
             });
 
-            const maReaction = liste.find(function(reaction) {
-                return reaction.user_id === utilisateurConnecte.id;
+            const maReaction = liste.find(function(r) {
+                return r.user_id === utilisateurConnecte.id;
             });
 
             const bouton = document.createElement("button");
@@ -200,13 +377,12 @@ function afficherMessages() {
 
             bouton.textContent = emoji + " " + liste.length;
 
-            bouton.setAttribute(
-                "aria-pressed",
-                maReaction ? "true" : "false"
-            );
-
             bouton.addEventListener("click", function() {
-                changerReaction(message.id, emoji, maReaction);
+                changerReaction(
+                    message.id,
+                    emoji,
+                    maReaction
+                );
             });
 
             zoneReactions.appendChild(bouton);
@@ -219,7 +395,7 @@ function afficherMessages() {
     zoneMessages.scrollTop = zoneMessages.scrollHeight;
 }
 
-// Charger les messages et leurs réactions
+// Charger les messages, réactions et fichiers
 async function chargerMessages() {
     if (!conversationAutorisee) return false;
 
@@ -245,80 +421,56 @@ async function chargerMessages() {
     const ids = nouveauxMessages.map(m => m.id);
 
     let nouvellesReactions = [];
+    let nouveauxFichiers = [];
 
     if (ids.length > 0) {
-        const resultat = await supabaseClient
-            .from("reactions")
-            .select("id, message_id, user_id, emoji")
-            .in("message_id", ids);
+        const [resultatReactions, resultatFichiers] =
+            await Promise.all([
+                supabaseClient
+                    .from("reactions")
+                    .select("id, message_id, user_id, emoji")
+                    .in("message_id", ids),
+
+                supabaseClient
+                    .from("chat_attachments")
+                    .select(
+                        "message_id, file_path, file_name, file_type"
+                    )
+                    .in("message_id", ids)
+            ]);
 
         if (numero !== chargementNumero) return false;
 
-        if (resultat.error) {
-            console.error("Erreur réactions :", resultat.error);
+        if (resultatReactions.error) {
+            console.error(
+                "Erreur réactions :",
+                resultatReactions.error
+            );
+        } else {
+            nouvellesReactions = resultatReactions.data || [];
+        }
+
+        if (resultatFichiers.error) {
+            console.error(
+                "Erreur pièces jointes :",
+                resultatFichiers.error
+            );
+
             messageRetour.textContent =
-                "Impossible de charger les réactions.";
+                "Impossible de charger les pièces jointes.";
             return false;
         }
 
-        nouvellesReactions = resultat.data || [];
+        nouveauxFichiers = resultatFichiers.data || [];
     }
 
     messages = nouveauxMessages;
     reactions = nouvellesReactions;
+    piecesJointes = nouveauxFichiers;
 
     afficherMessages();
+
     return true;
-}
-
-// Récupérer la dernière lecture du contact
-async function chargerLectureContact() {
-    if (!autreUtilisateurId || !conversationAutorisee) return;
-
-    const { data, error } = await supabaseClient
-        .from("conversation_reads")
-        .select("last_read_at")
-        .eq("conversation_id", Number(conversationId))
-        .eq("user_id", autreUtilisateurId)
-        .maybeSingle();
-
-    if (error) {
-        console.error("Erreur lecture du contact :", error);
-        return;
-    }
-
-    derniereLectureContact = data?.last_read_at || null;
-
-    // Actualiser les coches sans recharger les messages
-    afficherMessages();
-}
-
-// Marquer la conversation comme lue
-async function marquerCommeLu() {
-    if (
-        !utilisateurConnecte ||
-        !conversationAutorisee ||
-        document.visibilityState !== "visible"
-    ) {
-        return;
-    }
-
-    const { error } = await supabaseClient
-        .from("conversation_reads")
-        .upsert(
-            {
-                conversation_id: Number(conversationId),
-                user_id: utilisateurConnecte.id,
-                last_read_at: new Date().toISOString()
-            },
-            {
-                onConflict: "conversation_id,user_id"
-            }
-        );
-
-    if (error) {
-        console.error("Erreur lecture :", error);
-    }
 }
 
 async function actualiserConversation() {
@@ -329,7 +481,10 @@ async function actualiserConversation() {
     }
 }
 
-// Ajouter ou retirer une réaction
+// --------------------------------------------------
+// Réactions
+// --------------------------------------------------
+
 async function changerReaction(messageId, emoji, maReaction) {
     if (
         !conversationAutorisee ||
@@ -340,7 +495,7 @@ async function changerReaction(messageId, emoji, maReaction) {
     reactionEnCours = true;
 
     try {
-        let erreur = null;
+        let erreur;
 
         if (maReaction) {
             const resultat = await supabaseClient
@@ -371,16 +526,283 @@ async function changerReaction(messageId, emoji, maReaction) {
         console.error("Erreur réaction :", error);
         messageRetour.textContent =
             "Impossible de modifier la réaction.";
-        await chargerMessages();
     } finally {
         reactionEnCours = false;
     }
 }
 
-// Réception des messages, réactions et lectures
-function activerRealtimePrive() {
-    if (canalPrive) return;
+// --------------------------------------------------
+// Choix d'un fichier
+// --------------------------------------------------
 
+fichierPrive.addEventListener("change", function() {
+    const fichier = fichierPrive.files[0];
+
+    if (!fichier) {
+        fichierSelectionne.hidden = true;
+        return;
+    }
+
+    if (!formats[fichier.type]) {
+        messageRetour.textContent =
+            "Format accepté : JPG, PNG, WEBP ou PDF.";
+        fichierPrive.value = "";
+        fichierSelectionne.hidden = true;
+        return;
+    }
+
+    if (fichier.size === 0 || fichier.size > MAX_FICHIER) {
+        messageRetour.textContent =
+            "Le fichier doit avoir une taille de 5 Mo maximum.";
+        fichierPrive.value = "";
+        fichierSelectionne.hidden = true;
+        return;
+    }
+
+    nomFichierSelectionne.textContent = fichier.name;
+    fichierSelectionne.hidden = false;
+    messageRetour.textContent = "";
+});
+
+retirerFichier.addEventListener("click", function() {
+    fichierPrive.value = "";
+    fichierSelectionne.hidden = true;
+});
+
+// --------------------------------------------------
+// Envoyer un message ou un fichier
+// --------------------------------------------------
+
+formulaire.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    if (
+        !utilisateurConnecte ||
+        !conversationAutorisee ||
+        envoiEnCours
+    ) return;
+
+    const texte = champMessage.value.trim();
+    const fichier = fichierPrive.files[0] || null;
+
+    if (!texte && !fichier) return;
+
+    if (fichier && (
+        !formats[fichier.type] ||
+        fichier.size === 0 ||
+        fichier.size > MAX_FICHIER
+    )) {
+        messageRetour.textContent =
+            "Fichier non autorisé ou trop volumineux.";
+        return;
+    }
+
+    envoiEnCours = true;
+    boutonEnvoyer.disabled = true;
+
+    clearTimeout(minuterieSaisieLocale);
+    envoyerEtatSaisie(false);
+
+    let cheminFichier = null;
+    let fichierEnregistre = false;
+
+    try {
+        messageRetour.textContent = fichier
+            ? "Envoi du fichier..."
+            : "Envoi du message...";
+
+        // 1. Transférer le fichier si nécessaire
+        if (fichier) {
+            const extension = formats[fichier.type];
+
+            cheminFichier =
+                conversationId + "/" +
+                utilisateurConnecte.id + "/" +
+                crypto.randomUUID() + "." + extension;
+
+            const { error: erreurUpload } =
+                await supabaseClient
+                    .storage
+                    .from("chat-files")
+                    .upload(cheminFichier, fichier, {
+                        contentType: fichier.type,
+                        upsert: false
+                    });
+
+            if (erreurUpload) throw erreurUpload;
+
+            fichierEnregistre = true;
+        }
+
+        // 2. Enregistrer le message
+        const contenu = texte ||
+            ("📎 " + fichier.name);
+
+        const { data: messageCree, error: erreurMessage } =
+            await supabaseClient
+                .from("Messages")
+                .insert({
+                    utilisateur:
+                        utilisateurConnecte.user_metadata?.prenom ||
+                        "Utilisateur",
+                    contenu: contenu,
+                    user_id: utilisateurConnecte.id,
+                    conversation_id: Number(conversationId)
+                })
+                .select("id")
+                .single();
+
+        if (erreurMessage || !messageCree) {
+            throw erreurMessage ||
+                new Error("Message non créé");
+        }
+
+        // 3. Associer le fichier au message
+        if (fichier) {
+            const { error: erreurPiece } =
+                await supabaseClient
+                    .from("chat_attachments")
+                    .insert({
+                        message_id: messageCree.id,
+                        conversation_id: Number(conversationId),
+                        uploader_id: utilisateurConnecte.id,
+                        file_path: cheminFichier,
+                        file_name: fichier.name,
+                        file_type: fichier.type,
+                        file_size: fichier.size
+                    });
+
+            if (erreurPiece) throw erreurPiece;
+        }
+
+        // 4. Réinitialiser le formulaire
+        champMessage.value = "";
+        fichierPrive.value = "";
+        fichierSelectionne.hidden = true;
+
+        messageRetour.textContent = "";
+        fichierEnregistre = false;
+
+        await actualiserConversation();
+
+    } catch (error) {
+        console.error("Erreur envoi :", error);
+
+        messageRetour.textContent =
+            "L'envoi n'a pas été entièrement terminé.";
+
+        // Nettoyer le fichier si une étape a échoué
+        if (cheminFichier && fichierEnregistre) {
+            const { error: erreurNettoyage } =
+                await supabaseClient
+                    .storage
+                    .from("chat-files")
+                    .remove([cheminFichier]);
+
+            if (erreurNettoyage) {
+                console.error(
+                    "Nettoyage impossible :",
+                    erreurNettoyage
+                );
+            }
+        }
+
+    } finally {
+        envoiEnCours = false;
+        boutonEnvoyer.disabled = false;
+    }
+});
+
+// --------------------------------------------------
+// Indicateur "écrit..."
+// --------------------------------------------------
+
+function envoyerEtatSaisie(actif) {
+    if (!canalSaisie || !saisieConnectee) return;
+
+    canalSaisie.send({
+        type: "broadcast",
+        event: "saisie",
+        payload: {
+            utilisateur: utilisateurConnecte.id,
+            actif: actif
+        }
+    }).catch(function(error) {
+        console.error("Erreur saisie :", error);
+    });
+}
+
+function activerSaisieRealtime() {
+    canalSaisie = supabaseClient.channel(
+        "typing:" + conversationId,
+        {
+            config: { private: true }
+        }
+    );
+
+    canalSaisie
+        .on(
+            "broadcast",
+            { event: "saisie" },
+            function(message) {
+                const info = message.payload;
+
+                if (
+                    !info ||
+                    info.utilisateur !== autreUtilisateurId
+                ) return;
+
+                clearTimeout(minuterieSaisieDistante);
+
+                if (info.actif) {
+                    indicateurSaisie.textContent =
+                        prenomContact + " écrit...";
+
+                    minuterieSaisieDistante = setTimeout(
+                        function() {
+                            indicateurSaisie.textContent = "";
+                        },
+                        4000
+                    );
+                } else {
+                    indicateurSaisie.textContent = "";
+                }
+            }
+        )
+        .subscribe(function(status) {
+            saisieConnectee = status === "SUBSCRIBED";
+            console.log("Realtime saisie :", status);
+        });
+}
+
+champMessage.addEventListener("input", function() {
+    if (!conversationAutorisee) return;
+
+    clearTimeout(minuterieSaisieLocale);
+
+    if (!champMessage.value.trim()) {
+        envoyerEtatSaisie(false);
+        return;
+    }
+
+    const maintenant = Date.now();
+
+    if (maintenant - derniereEmissionSaisie > 1500) {
+        envoyerEtatSaisie(true);
+        derniereEmissionSaisie = maintenant;
+    }
+
+    minuterieSaisieLocale = setTimeout(function() {
+        envoyerEtatSaisie(false);
+        derniereEmissionSaisie = 0;
+    }, 1800);
+});
+
+// --------------------------------------------------
+// Realtime : messages, réactions, lectures
+// --------------------------------------------------
+
+function activerRealtimePrive() {
     canalPrive = supabaseClient
         .channel("messages-prives-" + conversationId)
 
@@ -390,11 +812,28 @@ function activerRealtimePrive() {
                 event: "INSERT",
                 schema: "public",
                 table: "Messages",
-                filter: "conversation_id=eq." + conversationId
+                filter: "conversation_id=eq." +
+                    conversationId
             },
             function() {
                 if (document.visibilityState === "visible") {
                     actualiserConversation();
+                }
+            }
+        )
+
+        .on(
+            "postgres_changes",
+            {
+                event: "INSERT",
+                schema: "public",
+                table: "chat_attachments",
+                filter: "conversation_id=eq." +
+                    conversationId
+            },
+            function() {
+                if (document.visibilityState === "visible") {
+                    chargerMessages();
                 }
             }
         )
@@ -419,7 +858,8 @@ function activerRealtimePrive() {
                 event: "*",
                 schema: "public",
                 table: "conversation_reads",
-                filter: "conversation_id=eq." + conversationId
+                filter: "conversation_id=eq." +
+                    conversationId
             },
             function() {
                 chargerLectureContact();
@@ -428,118 +868,9 @@ function activerRealtimePrive() {
 
         .subscribe(function(status) {
             console.log("Realtime messages :", status);
-
-            if (status === "SUBSCRIBED") {
-                actualiserConversation();
-                chargerLectureContact();
-            }
         });
 }
 
-// Envoyer une indication de saisie
-function envoyerEtatSaisie(estEnTrainDecrire) {
-    if (
-        !canalSaisie ||
-        !saisieConnectee ||
-        !utilisateurConnecte
-    ) return;
-
-    canalSaisie.send({
-        type: "broadcast",
-        event: "saisie",
-        payload: {
-            utilisateur: utilisateurConnecte.id,
-            actif: estEnTrainDecrire
-        }
-    }).catch(function(error) {
-        console.error("Erreur indicateur saisie :", error);
-    });
-}
-
-// Recevoir "écrit..."
-function activerSaisieRealtime() {
-    if (canalSaisie) return;
-
-    canalSaisie = supabaseClient.channel(
-        "typing:" + conversationId,
-        {
-            config: {
-                private: true
-            }
-        }
-    );
-
-    canalSaisie
-        .on(
-            "broadcast",
-            { event: "saisie" },
-            function(message) {
-                const info = message.payload;
-
-                if (
-                    !info ||
-                    info.utilisateur !== autreUtilisateurId
-                ) return;
-
-                clearTimeout(minuterieSaisieDistante);
-
-                if (info.actif) {
-                    indicateurSaisie.textContent =
-                        prenomContact + " écrit...";
-
-                    // Masquer automatiquement si le contact
-                    // cesse d'envoyer des indications
-                    minuterieSaisieDistante = setTimeout(
-                        function() {
-                            indicateurSaisie.textContent = "";
-                        },
-                        4000
-                    );
-                } else {
-                    indicateurSaisie.textContent = "";
-                }
-            }
-        )
-
-        .subscribe(function(status, error) {
-            console.log("Realtime saisie :", status);
-
-            saisieConnectee = status === "SUBSCRIBED";
-
-            if (error) {
-                console.error("Erreur canal privé :", error);
-            }
-        });
-}
-
-// Lorsqu'on commence à écrire
-champMessage.addEventListener("input", function() {
-    if (!conversationAutorisee) return;
-
-    clearTimeout(minuterieSaisieLocale);
-
-    const texte = champMessage.value.trim();
-
-    if (!texte) {
-        envoyerEtatSaisie(false);
-        return;
-    }
-
-    const maintenant = Date.now();
-
-    // Éviter un événement à chaque caractère
-    if (maintenant - derniereEmissionSaisie > 1500) {
-        envoyerEtatSaisie(true);
-        derniereEmissionSaisie = maintenant;
-    }
-
-    minuterieSaisieLocale = setTimeout(function() {
-        envoyerEtatSaisie(false);
-        derniereEmissionSaisie = 0;
-    }, 1800);
-});
-
-// Quand on revient sur l'onglet
 document.addEventListener("visibilitychange", function() {
     if (!conversationAutorisee) return;
 
@@ -547,12 +878,15 @@ document.addEventListener("visibilitychange", function() {
         actualiserConversation();
         chargerLectureContact();
     } else {
-        clearTimeout(minuterieSaisieLocale);
         envoyerEtatSaisie(false);
+        clearTimeout(minuterieSaisieLocale);
     }
 });
 
-// Vérifier l'accès et ouvrir la conversation
+// --------------------------------------------------
+// Démarrage et contrôle d'accès
+// --------------------------------------------------
+
 async function demarrer() {
     boutonEnvoyer.disabled = true;
 
@@ -566,7 +900,8 @@ async function demarrer() {
 
     utilisateurConnecte = data.user;
 
-    if (!conversationId || !/^[1-9]\d*$/.test(conversationId)) {
+    if (!conversationId ||
+        !/^[1-9]\d*$/.test(conversationId)) {
         messageRetour.textContent =
             "Identifiant de conversation invalide.";
         return;
@@ -587,10 +922,8 @@ async function demarrer() {
 
     const monId = utilisateurConnecte.id;
 
-    if (
-        conversation.user1_id !== monId &&
-        conversation.user2_id !== monId
-    ) {
+    if (conversation.user1_id !== monId &&
+        conversation.user2_id !== monId) {
         messageRetour.textContent = "Accès refusé.";
         return;
     }
@@ -602,16 +935,11 @@ async function demarrer() {
             ? conversation.user2_id
             : conversation.user1_id;
 
-    const { data: profil, error: erreurProfil } =
-        await supabaseClient
-            .from("profils")
-            .select("prenom, avatar_url")
-            .eq("id", autreUtilisateurId)
-            .single();
-
-    if (erreurProfil) {
-        console.error("Erreur profil :", erreurProfil);
-    }
+    const { data: profil } = await supabaseClient
+        .from("profils")
+        .select("prenom, avatar_url")
+        .eq("id", autreUtilisateurId)
+        .single();
 
     prenomContact = profil?.prenom || "Utilisateur";
 
@@ -619,15 +947,11 @@ async function demarrer() {
         "Conversation avec " + prenomContact;
 
     await afficherAvatarContact(profil);
-
-    // Charger les dates de lecture avant les messages
     await chargerLectureContact();
     await actualiserConversation();
 
-    // Actualiser le statut Lu / Envoyé
     activerRealtimePrive();
 
-    // Authentifier le canal privé d'indication de saisie
     const { data: sessionData } =
         await supabaseClient.auth.getSession();
 
@@ -639,8 +963,6 @@ async function demarrer() {
 
     activerSaisieRealtime();
 
-    // Vérification périodique si une notification
-    // Realtime est manquée
     intervalleLecture = setInterval(function() {
         if (document.visibilityState === "visible") {
             chargerLectureContact();
@@ -651,48 +973,7 @@ async function demarrer() {
     messageRetour.textContent = "";
 }
 
-// Envoyer un message privé
-formulaire.addEventListener("submit", async function(event) {
-    event.preventDefault();
-
-    if (
-        !utilisateurConnecte ||
-        !conversationAutorisee ||
-        boutonEnvoyer.disabled
-    ) return;
-
-    const texte = champMessage.value.trim();
-    if (!texte) return;
-
-    boutonEnvoyer.disabled = true;
-    clearTimeout(minuterieSaisieLocale);
-    envoyerEtatSaisie(false);
-
-    const { error } = await supabaseClient
-        .from("Messages")
-        .insert({
-            utilisateur:
-                utilisateurConnecte.user_metadata?.prenom ||
-                "Utilisateur",
-            contenu: texte,
-            user_id: utilisateurConnecte.id,
-            conversation_id: Number(conversationId)
-        });
-
-    if (error) {
-        console.error("Erreur envoi :", error);
-        messageRetour.textContent =
-            "Impossible d'envoyer le message.";
-    } else {
-        champMessage.value = "";
-        messageRetour.textContent = "";
-        await actualiserConversation();
-    }
-
-    boutonEnvoyer.disabled = false;
-});
-
-// Libérer les connexions
+// Nettoyer les connexions
 window.addEventListener("pagehide", function() {
     clearTimeout(minuterieSaisieLocale);
     clearTimeout(minuterieSaisieDistante);
