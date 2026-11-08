@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+    <title>Mon profil - Messagerie</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Messagerie instantanée</h1>
+    <nav>
+        <a href="contact.html">Contacts</a>
+        <a href="conversation.html">Conversation générale</a>
+        <a href="discussions.html">Mes discussions</a>
+        <a href="profil.html">Mon profil</a>
+    </nav>
+    <main class="page-profil">
+        <h2>Mon profil 👤</h2>
+        <div class="carte-profil">
+            <div class="avatar-profil" id="avatarInitiale">
+                ?
+            </div>
+            <h3 id="nomAffiche">Chargement...</h3>
+            <p id="emailAffiche"></p>
+            <form id="formProfil">
+                <label for="prenomProfil">
+                    Modifier mon prénom
+                </label>
+                <input
+                    type="text"
+                    id="prenomProfil"
+                    maxlength="50"
+                    placeholder="Votre prénom"
+                    required
+                >
+                <button type="submit" id="boutonSauver">
+                    Enregistrer
+                </button>
+            </form>
+            <p id="messageProfil" role="status"></p>
+            <button
+                type="button"
+                id="boutonDeconnexion"
+                class="bouton-deconnexion"
+            >
+                Se déconnecter
+            </button>
+        </div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="profil.js"></script>
+</body>
+</html>
