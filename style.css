@@ -105,3 +105,145 @@ a {
     background: #f0e7ff;
     border-radius: 8px;
 }
+/* Mise en page générale */
+* {
+    box-sizing: border-box;
+}
+body {
+    background: #f5f3ff;
+    color: #252039;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+}
+h1 {
+    color: #5b21b6;
+    font-size: 32px;
+    margin-bottom: 20px;
+}
+h2 {
+    color: #302448;
+   }
+/* Zone des messages */
+.messages {
+    width: 100%;
+    max-width: 700px;
+    min-height: 250px;
+    max-height: 550px;
+    overflow-y: auto;
+    margin: 25px auto;
+    padding: 20px;
+    background: white;
+    border: 1px solid #e9e5f5;
+    border-radius: 18px;
+    box-shadow: 0 5px 20px rgba(91, 33, 182, 0.08);
+}
+/* Messages envoyés */
+.envoye {
+    background: linear-gradient(135deg, #7c3aed, #5b21b6);
+    color: white;
+    border-radius: 16px 16px 4px 16px;
+    padding: 12px 16px;
+    margin-left: auto;
+    width: fit-content;
+    max-width: 75%;
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+/* Messages reçus */
+.recu {
+    background: #f0edf8;
+    color: #302448;
+    border-radius: 16px 16px 16px 4px;
+    padding: 12px 16px;
+    margin-right: auto;
+    width: fit-content;
+    max-width: 75%;
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+/* Heure des messages */
+.heure {
+    color: #8b8598;
+    font-size: 12px;
+    margin: 5px 0;
+}
+/* Réactions */
+.reactions {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100%;
+    margin: 8px 0 16px;
+}
+.reactions button {
+    width: auto;
+    min-width: 55px;
+    padding: 6px 10px;
+    background: #f3efff;
+    color: #302448;
+    border: 1px solid #e9ddff;
+    border-radius: 20px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.reactions button:hover {
+    background: #e9d5ff;
+    transform: translateY(-2px);
+}
+/* Formulaire d'envoi */
+form {
+    width: 100%;
+    max-width: 600px;
+    padding: 24px;
+    margin: 20px auto;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(91, 33, 182, 0.08);
+}
+input {
+    max-width: 100%;
+}
+form button {
+    background: #5b21b6;
+    border-radius: 10px;
+}
+form button:hover:not(:disabled) {
+    background: #7c3aed;
+}
+form button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+/* Liens de navigation */
+a {
+    color: #5b21b6;
+    text-decoration: none;
+    margin: 0 6px;
+}
+a:hover {
+    text-decoration: underline;
+}
+/* Affichage sur téléphone */
+@media (max-width: 600px) {
+    body {
+        padding: 12px;
+    }
+    h1 {
+        font-size: 25px;
+    }
+    .messages {
+        padding: 12px;
+        max-height: 65vh;
+    }
+    .envoye,
+    .recu {
+        max-width: 85%;
+    }
+    form {
+        padding: 15px;
+    }
+}
