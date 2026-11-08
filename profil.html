@@ -6,25 +6,45 @@
           content="width=device-width, initial-scale=1.0">
     <title>Mon profil - Messagerie</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="design45.css">
 </head>
 <body>
-    <h1>Messagerie instantanée</h1>
-    <nav>
-        <a href="contact.html">Contacts</a>
-        <a href="conversation.html">Conversation générale</a>
-        <a href="discussions.html">Mes discussions</a>
-        <a href="profil.html">Mon profil</a>
+    <h1>💬 Messagerie instantanée</h1>
+    <nav aria-label="Navigation principale">
+        <a href="contact.html">
+            👥 Contacts
+        </a>
+        <a href="conversation.html">
+            🌍 Conversation générale
+        </a>
+        <a href="discussions.html">
+            💬 Mes discussions
+        </a>
+        <a href="profil.html" class="actif">
+            👤 Mon profil
+        </a>
     </nav>
     <main class="page-profil">
-        <h2>Mon profil 👤</h2>
+        <div class="titre-page">
+            <h2>Mon profil 👤</h2>
+            <p>
+                Gérez vos informations personnelles
+                et votre photo de profil.
+            </p>
+        </div>
         <div class="carte-profil">
-            <div class="avatar-profil"
-                 id="avatarInitiale">
+            <div
+                class="avatar-profil"
+                id="avatarInitiale">
                 ?
             </div>
+            <h3 id="nomAffiche">
+                Chargement...
+            </h3>
+            <p id="emailAffiche"></p>
             <div class="zone-photo">
                 <label for="photoProfil">
-                    Choisir une photo 📸
+                    📸 Modifier ma photo de profil
                 </label>
                 <input
                     type="file"
@@ -37,8 +57,6 @@
                     Enregistrer la photo
                 </button>
             </div>
-            <h3 id="nomAffiche">Chargement...</h3>
-            <p id="emailAffiche"></p>
             <form id="formProfil">
                 <label for="prenomProfil">
                     Modifier mon prénom
@@ -50,8 +68,10 @@
                     placeholder="Votre prénom"
                     required
                 >
-                <button type="submit" id="boutonSauver">
-                    Enregistrer
+                <button
+                    type="submit"
+                    id="boutonSauver">
+                    Enregistrer les modifications
                 </button>
             </form>
             <p id="messageProfil" role="status"></p>
