@@ -4,24 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
-    <title>Contacts - Messagerie instantanée</title>
+    <title>Contacts - Messagerie</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="design45.css">
 </head>
 <body>
-    <h1>Messagerie instantanée</h1>
-    <nav>
-        <a href="contact.html">Contacts</a>
-        <a href="conversation.html">Conversation générale</a>
-        <a href="discussions.html">Mes discussions</a>
-        <a href="profil.html">Mon profil</a>
+    <h1>💬 Messagerie instantanée</h1>
+    <nav aria-label="Navigation principale">
+        <a href="contact.html" class="actif">
+            👥 Contacts
+        </a>
+        <a href="conversation.html">
+            🌍 Conversation générale
+        </a>
+        <a href="discussions.html">
+            💬 Mes discussions
+        </a>
+        <a href="profil.html">
+            👤 Mon profil
+        </a>
     </nav>
     <main class="page-contacts">
-        <h2>Mes contacts 👥</h2>
-        <p>Choisissez un utilisateur pour discuter en privé.</p>
+        <div class="titre-page">
+            <h2>Mes contacts 👥</h2>
+            <p>
+                Retrouvez les utilisateurs et
+                démarrez une discussion privée.
+            </p>
+        </div>
         <input
             type="search"
             id="rechercheContact"
-            placeholder="Rechercher un contact..."
+            placeholder="🔍 Rechercher un contact..."
             aria-label="Rechercher un contact"
         >
         <div id="listeContacts"></div>
