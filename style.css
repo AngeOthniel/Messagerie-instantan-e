@@ -757,3 +757,102 @@ a:hover {
         padding: 13px 12px;
     }
 }
+/* Étape 44 - Pièces jointes dans le chat */
+#formPrive {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.ligne-envoi {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 10px;
+}
+.bouton-joindre {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 46px;
+    height: 46px;
+    flex-shrink: 0;
+    background: #ede9fe;
+    color: #5b21b6;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 23px;
+}
+.ligne-envoi #messagePrive {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+}
+.ligne-envoi #boutonEnvoyerPrive {
+    width: auto;
+    flex-shrink: 0;
+}
+.fichier-selectionne {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #ede9fe;
+    color: #5b21b6;
+    border-radius: 12px;
+    overflow-wrap: anywhere;
+}
+.fichier-selectionne[hidden] {
+    display: none;
+}
+#nomFichierSelectionne {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+#retirerFichier {
+    background: #fff;
+    color: #b91c1c;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 10px;
+    width: auto;
+    cursor: pointer;
+}
+.piece-jointe-message {
+    margin-top: 8px;
+    max-width: 260px;
+    overflow-wrap: anywhere;
+}
+.piece-jointe-message img {
+    display: block;
+    max-width: 100%;
+    max-height: 230px;
+    object-fit: contain;
+    border-radius: 12px;
+}
+
+.piece-jointe-message a {
+    color: #5b21b6;
+    font-weight: 600;
+    text-decoration: underline;
+}
+.piece-jointe-message p {
+    font-size: 12px;
+    color: #666;
+    margin: 6px 0 0;
+}
+@media (max-width: 600px) {
+    .ligne-envoi {
+        gap: 6px;
+    }
+    .bouton-joindre {
+        width: 40px;
+        height: 42px;
+    }
+    .ligne-envoi #boutonEnvoyerPrive {
+        padding: 11px;
+    }
+    .piece-jointe-message {
+        max-width: 200px;
+    }
+}
