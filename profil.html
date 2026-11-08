@@ -18,8 +18,24 @@
     <main class="page-profil">
         <h2>Mon profil 👤</h2>
         <div class="carte-profil">
-            <div class="avatar-profil" id="avatarInitiale">
+            <div class="avatar-profil"
+                 id="avatarInitiale">
                 ?
+            </div>
+            <div class="zone-photo">
+                <label for="photoProfil">
+                    Choisir une photo 📸
+                </label>
+                <input
+                    type="file"
+                    id="photoProfil"
+                    accept="image/jpeg,image/png,image/webp"
+                >
+                <button
+                    type="button"
+                    id="boutonPhoto">
+                    Enregistrer la photo
+                </button>
             </div>
             <h3 id="nomAffiche">Chargement...</h3>
             <p id="emailAffiche"></p>
@@ -42,8 +58,7 @@
             <button
                 type="button"
                 id="boutonDeconnexion"
-                class="bouton-deconnexion"
-            >
+                class="bouton-deconnexion">
                 Se déconnecter
             </button>
         </div>
