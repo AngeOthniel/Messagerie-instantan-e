@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
-    <title>Conversation privée</title>
+    <title>Discussion privée - Messagerie</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,26 +12,46 @@
     <nav>
         <a href="contact.html">Contacts</a>
         <a href="conversation.html">Conversation générale</a>
+        <a href="discussions.html">Mes discussions</a>
+        <a href="profil.html">Mon profil</a>
     </nav>
-    <h2 id="nomContact">Conversation privée</h2>
-    <div class="messages" id="messagesPrives"></div>
-    <h2>Envoyer un message</h2>
-    <form id="formPrive">
-        <label for="messagePrive">Message :</label>
-        <input
-            type="text"
-            id="messagePrive"
-            placeholder="Écrire un message..."
-            required
-        >
-        <button type="submit" disabled>
-            Envoyer
-        </button>
-    </form>
-    <p id="messageRetour">
-        Configuration de la conversation privée en cours.
-    </p>
+    <main class="page-prive">
+        <div class="entete-prive">
+            <div
+                id="avatarPrive"
+                class="avatar-contact">
+                ?
+            </div>
+            <div>
+                <h2 id="nomContact">
+                    Chargement...
+                </h2>
+                <p class="sous-titre-prive">
+                    Discussion privée 🔒
+                </p>
+            </div>
+        </div>
+        <div
+            id="messagesPrives"
+            class="messages"
+            aria-live="polite">
+        </div>
+        <form id="formPrive">
+            <input
+                type="text"
+                id="messagePrive"
+                placeholder="Écrire un message..."
+                maxlength="2000"
+                autocomplete="off"
+                required
+            >
+            <button type="submit" disabled>
+                Envoyer
+            </button>
+        </form>
+        <p id="messageRetour" role="status"></p>
+    </main>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="prive.js"></script>
+    <script src="prive.js"></script>
 </body>
 </html>
