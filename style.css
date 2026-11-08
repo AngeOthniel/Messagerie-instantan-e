@@ -578,3 +578,182 @@ a:hover {
         min-width: 46px;
     }
 }
+/* Étape 43 - Messagerie privée moderne */
+.page-prive {
+    max-width: 760px;
+    margin: 24px auto;
+    padding: 0 12px;
+}
+/* Entête de la conversation */
+.entete-prive {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    background: white;
+    border: 1px solid #e9ddff;
+    border-radius: 16px;
+    margin-bottom: 14px;
+    text-align: left;
+}
+.entete-prive h2 {
+    color: #5b21b6;
+    margin: 0;
+    font-size: 20px;
+}
+.indicateur-saisie {
+    color: #7c3aed;
+    font-size: 13px;
+    font-style: italic;
+    min-height: 16px;
+    margin: 4px 0 0;
+}
+/* Zone des messages */
+#messagesPrives {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    min-height: 350px;
+    max-height: 530px;
+    overflow-y: auto;
+    padding: 18px 12px;
+    border-radius: 16px;
+    background: #faf8ff;
+    border: 1px solid #ede9fe;
+    text-align: left;
+}
+.bloc-message-prive {
+    display: flex;
+    flex-direction: column;
+    max-width: 78%;
+    margin-bottom: 12px;
+}
+.message-moi {
+    align-self: flex-end;
+    align-items: flex-end;
+}
+.message-autre {
+    align-self: flex-start;
+    align-items: flex-start;
+}
+#messagesPrives .envoye,
+#messagesPrives .recu {
+    display: block;
+    box-sizing: border-box;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0;
+    padding: 11px 15px;
+    border-radius: 17px;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    font-size: 15px;
+    line-height: 1.5;
+}
+#messagesPrives .envoye {
+    background: #5b21b6;
+    color: white;
+    border-bottom-right-radius: 5px;
+    text-align: left;
+}
+#messagesPrives .recu {
+    background: #ede9f2;
+    color: #292332;
+    border-bottom-left-radius: 5px;
+    text-align: left;
+}
+/* Heures et confirmations */
+.info-message {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #777;
+    margin-top: 5px;
+}
+.statut-message {
+    color: #777;
+}
+.statut-lu {
+    color: #5b21b6;
+    font-weight: bold;
+}
+/* Dates */
+.separateur-date {
+    align-self: center;
+    background: #ede9fe;
+    color: #5b21b6;
+    padding: 7px 14px;
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 600;
+    margin: 16px 0;
+}
+/* Réactions */
+.reactions-privees {
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    margin-top: 6px;
+}
+.bouton-reaction-prive {
+    width: auto;
+    min-width: 42px;
+    padding: 5px 8px;
+    background: #f0eef5;
+    color: #292332;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+}
+.bouton-reaction-prive.reaction-active {
+    background: #e9d5ff;
+    outline: 1px solid #c084fc;
+}
+/* Formulaire d'envoi */
+#formPrive {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    align-items: center;
+    margin-top: 14px;
+}
+#messagePrive {
+    flex: 1;
+    min-width: 0;
+    padding: 13px;
+    border-radius: 12px;
+    border: 1px solid #ddd6fe;
+    font-size: 15px;
+}
+#formPrive button {
+    flex: 0 0 auto;
+    width: auto;
+    background: #5b21b6;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 13px 18px;
+    cursor: pointer;
+}
+#formPrive button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+@media (max-width: 600px) {
+    .bloc-message-prive {
+        max-width: 88%;
+    }
+    #messagesPrives {
+        min-height: 300px;
+        padding: 12px 8px;
+    }
+    #formPrive button {
+        padding: 13px 12px;
+    }
+}
