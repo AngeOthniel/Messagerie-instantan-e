@@ -6,54 +6,64 @@
           content="width=device-width, initial-scale=1.0">
     <title>Discussion privée - Messagerie</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="design45.css">
 </head>
 <body>
-
-    <h1>Messagerie instantanée</h1>
-
-    <nav>
-        <a href="contact.html">Contacts</a>
-        <a href="conversation.html">Conversation générale</a>
-        <a href="discussions.html">Mes discussions</a>
-        <a href="profil.html">Mon profil</a>
+    <h1>💬 Messagerie instantanée</h1>
+    <nav aria-label="Navigation principale">
+        <a href="contact.html">
+            👥 Contacts
+        </a>
+        <a href="conversation.html">
+            🌍 Conversation générale
+        </a>
+        <a href="discussions.html" class="actif">
+            💬 Mes discussions
+        </a>
+        <a href="profil.html">
+            👤 Mon profil
+        </a>
     </nav>
-
     <main class="page-prive">
-
         <div class="entete-prive">
-            <div id="avatarPrive" class="avatar-contact">?</div>
-
+            <div
+                id="avatarPrive"
+                class="avatar-contact">
+                ?
+            </div>
             <div>
-                <h2 id="nomContact">Chargement...</h2>
+                <h2 id="nomContact">
+                    Chargement...
+                </h2>
                 <p class="sous-titre-prive">
-                    Discussion privée 🔒
+                    🔒 Discussion privée
                 </p>
-                <p id="indicateurSaisie"
-                   class="indicateur-saisie"></p>
+                <p
+                    id="indicateurSaisie"
+                    class="indicateur-saisie"
+                    aria-live="polite">
+                </p>
             </div>
         </div>
-
-        <div id="messagesPrives"
-             class="messages"
-             aria-label="Messages de la conversation">
+        <div
+            id="messagesPrives"
+            class="messages"
+            aria-label="Messages privés">
         </div>
-
         <form id="formPrive">
-
             <div class="ligne-envoi">
-                <label for="fichierPrive"
-                       class="bouton-joindre"
-                       title="Joindre un fichier">
+                <label
+                    for="fichierPrive"
+                    class="bouton-joindre"
+                    title="Joindre une photo ou un PDF">
                     📎
                 </label>
-
                 <input
                     type="file"
                     id="fichierPrive"
                     accept="image/jpeg,image/png,image/webp,application/pdf"
                     hidden
                 >
-
                 <input
                     type="text"
                     id="messagePrive"
@@ -61,31 +71,29 @@
                     maxlength="2000"
                     autocomplete="off"
                 >
-
-                <button type="submit" id="boutonEnvoyerPrive"
-                        disabled>
+                <button
+                    type="submit"
+                    id="boutonEnvoyerPrive"
+                    disabled>
                     Envoyer
                 </button>
             </div>
-
-            <div id="fichierSelectionne"
-                 class="fichier-selectionne"
-                 hidden>
+            <div
+                id="fichierSelectionne"
+                class="fichier-selectionne"
+                hidden>
                 <span id="nomFichierSelectionne"></span>
-                <button type="button"
-                        id="retirerFichier">
+                <button
+                    type="button"
+                    id="retirerFichier"
+                    aria-label="Retirer le fichier">
                     ✕
                 </button>
             </div>
-
         </form>
-
         <p id="messageRetour" role="status"></p>
-
     </main>
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="prive.js"></script>
-
 </body>
 </html>
