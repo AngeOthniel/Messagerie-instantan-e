@@ -20,7 +20,7 @@ let messages = [];
 let reactions = [];
 let chargementNumero = 0;
 let reactionEnCours = false;
-// Afficher les messages et les réactions
+// Afficher les messages et réactions
 function afficherMessages() {
     zoneMessages.innerHTML = "";
     messages.forEach(function(message) {
@@ -45,7 +45,7 @@ function afficherMessages() {
         });
         heure.style.textAlign = "center";
         bloc.appendChild(heure);
-        // Conteneur des réactions
+        // Zone des réactions
         const zoneReactions = document.createElement("div");
         zoneReactions.classList.add("reactions");
         zoneReactions.style.display = "flex";
@@ -54,7 +54,6 @@ function afficherMessages() {
         zoneReactions.style.gap = "12px";
         zoneReactions.style.margin = "8px 0";
         emojis.forEach(function(emoji) {
-            // Réactions de ce message et de cet emoji
             const liste = reactions.filter(function(reaction) {
                 return reaction.message_id === message.id &&
                        reaction.emoji === emoji;
@@ -88,9 +87,9 @@ function afficherMessages() {
         zoneMessages.appendChild(bloc);
     });
 }
-// Charger les messages et leurs réactions
+// Charger les messages privés et réactions
 async function chargerMessages() {
-    if (!conversationAutorisee) return;
+    if (!conversationAutorisee) return false;
     const numero = ++chargementNumero;
     const { data, error } = await supabaseClient
         .from("Messages")
@@ -98,12 +97,12 @@ async function chargerMessages() {
         .eq("conversation_id", Number(conversationId))
         .order("created_at", { ascending: true })
         .order("id", { ascending: true });
-    if (numero !== chargementNumero) return;
+    if (numero !== chargementNumero) return false;
     if (error) {
         console.error("Erreur messages :", error);
         messageRetour.textContent =
             "Impossible de charger les messages.";
-        return;
+        return false;
     }
     const nouveauxMessages = data || [];
     const ids = nouveauxMessages.map(function(message) {
@@ -115,18 +114,55 @@ async function chargerMessages() {
             .from("reactions")
             .select("id, message_id, user_id, emoji")
             .in("message_id", ids);
-        if (numero !== chargementNumero) return;
+        if (numero !== chargementNumero) return false;
         if (resultat.error) {
             console.error("Erreur réactions :", resultat.error);
             messageRetour.textContent =
                 "Impossible de charger les réactions.";
-            return;
+            return false;
         }
         nouvellesReactions = resultat.data || [];
     }
     messages = nouveauxMessages;
     reactions = nouvellesReactions;
     afficherMessages();
+    return true;
+}
+// Enregistrer que la conversation a été lue
+async function marquerCommeLu() {
+    if (!utilisateurConnecte || !conversationAutorisee) {
+        return;
+    }
+    if (document.visibilityState !== "visible") {
+        return;
+    }
+    const { error } = await supabaseClient
+        .from("conversation_reads")
+        .upsert(
+            {
+                conversation_id: Number(conversationId),
+                user_id: utilisateurConnecte.id,
+                last_read_at: new Date().toISOString()
+            },
+            {
+                onConflict: "conversation_id,user_id"
+            }
+        );
+    if (error) {
+        console.error("Erreur lecture :", error);
+    } else {
+        console.log("Conversation marquée comme lue");
+    }
+}
+// Recharger et marquer comme lu si la page est visible
+async function actualiserConversation() {
+    const charge = await chargerMessages();
+    if (
+        charge &&
+        document.visibilityState === "visible"
+    ) {
+        await marquerCommeLu();
+    }
 }
 // Ajouter ou retirer une réaction
 async function changerReaction(messageId, emoji, maReaction) {
@@ -141,7 +177,6 @@ async function changerReaction(messageId, emoji, maReaction) {
     try {
         let erreur;
         if (maReaction) {
-            // Retirer sa propre réaction
             const resultat = await supabaseClient
                 .from("reactions")
                 .delete()
@@ -149,7 +184,6 @@ async function changerReaction(messageId, emoji, maReaction) {
                 .eq("user_id", utilisateurConnecte.id);
             erreur = resultat.error;
         } else {
-            // Ajouter une nouvelle réaction
             const resultat = await supabaseClient
                 .from("reactions")
                 .insert({
@@ -160,7 +194,6 @@ async function changerReaction(messageId, emoji, maReaction) {
             erreur = resultat.error;
         }
         if (erreur) throw erreur;
-        // Actualiser les compteurs
         await chargerMessages();
         messageRetour.textContent = "";
     } catch (error) {
@@ -186,11 +219,13 @@ function activerRealtimePrive() {
                 table: "Messages",
                 filter: "conversation_id=eq." + conversationId
             },
-            function() {
-                chargerMessages();
+            async function() {
+                if (document.visibilityState === "visible") {
+                    await actualiserConversation();
+                }
             }
         )
-        // Changements de réactions
+        // Réactions en temps réel
         .on(
             "postgres_changes",
             {
@@ -199,17 +234,31 @@ function activerRealtimePrive() {
                 table: "reactions"
             },
             function() {
-                chargerMessages();
+                if (document.visibilityState === "visible") {
+                    chargerMessages();
+                }
             }
         )
         .subscribe(function(status) {
             console.log("Realtime privé :", status);
 
-            if (status === "SUBSCRIBED") {
-                chargerMessages();
+            if (
+                status === "SUBSCRIBED" &&
+                document.visibilityState === "visible"
+            ) {
+                actualiserConversation();
             }
         });
 }
+// Lorsqu'on revient sur l'onglet
+document.addEventListener("visibilitychange", function() {
+    if (
+        document.visibilityState === "visible" &&
+        conversationAutorisee
+    ) {
+        actualiserConversation();
+    }
+});
 // Vérifier et ouvrir la conversation
 async function demarrer() {
     boutonEnvoyer.disabled = true;
@@ -220,12 +269,15 @@ async function demarrer() {
         return;
     }
     utilisateurConnecte = data.user;
-    if (!conversationId || !/^[1-9]\d*$/.test(conversationId)) {
+
+    if (
+        !conversationId ||
+        !/^[1-9]\d*$/.test(conversationId)
+    ) {
         messageRetour.textContent =
             "Identifiant de conversation invalide.";
         return;
     }
-    // Vérifier la participation
     const { data: conversation, error: erreurConversation } =
         await supabaseClient
             .from("conversations")
@@ -246,11 +298,11 @@ async function demarrer() {
         return;
     }
     conversationAutorisee = true;
+    // Identifier le contact
     const autreId =
         conversation.user1_id === monId
             ? conversation.user2_id
             : conversation.user1_id;
-    // Trouver le prénom du contact
     const { data: profil, error: erreurProfil } =
         await supabaseClient
             .from("profils")
@@ -263,8 +315,8 @@ async function demarrer() {
     titreContact.textContent =
         "Conversation avec " +
         (profil?.prenom || "Utilisateur");
-    // Charger les anciens messages
-    await chargerMessages();
+    // Charger les messages et marquer comme lu
+    await actualiserConversation();
     // Activer la réception automatique
     activerRealtimePrive();
     boutonEnvoyer.disabled = false;
@@ -300,7 +352,7 @@ formulaire.addEventListener("submit", async function(event) {
     } else {
         champMessage.value = "";
         messageRetour.textContent = "";
-        await chargerMessages();
+        await actualiserConversation();
     }
     boutonEnvoyer.disabled = false;
 });
