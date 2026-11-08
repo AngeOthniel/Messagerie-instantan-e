@@ -8,34 +8,39 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
     <h1>Messagerie instantanée</h1>
+
     <nav>
         <a href="contact.html">Contacts</a>
         <a href="conversation.html">Conversation générale</a>
         <a href="discussions.html">Mes discussions</a>
         <a href="profil.html">Mon profil</a>
     </nav>
+
     <main class="page-prive">
+
         <div class="entete-prive">
-            <div
-                id="avatarPrive"
-                class="avatar-contact">
+            <div id="avatarPrive" class="avatar-contact">
                 ?
             </div>
+
             <div>
-                <h2 id="nomContact">
-                    Chargement...
-                </h2>
+                <h2 id="nomContact">Chargement...</h2>
                 <p class="sous-titre-prive">
                     Discussion privée 🔒
                 </p>
+                <p id="indicateurSaisie"
+                   class="indicateur-saisie"
+                   aria-live="polite"></p>
             </div>
         </div>
-        <div
-            id="messagesPrives"
-            class="messages"
-            aria-live="polite">
+
+        <div id="messagesPrives"
+             class="messages"
+             aria-label="Messages de la conversation">
         </div>
+
         <form id="formPrive">
             <input
                 type="text"
@@ -45,13 +50,18 @@
                 autocomplete="off"
                 required
             >
+
             <button type="submit" disabled>
                 Envoyer
             </button>
         </form>
+
         <p id="messageRetour" role="status"></p>
+
     </main>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="prive.js"></script>
+
 </body>
 </html>
