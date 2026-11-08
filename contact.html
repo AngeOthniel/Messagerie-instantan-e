@@ -2,20 +2,31 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mes contacts</title>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+    <title>Contacts - Messagerie instantanée</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Mes contacts</h1>
+    <h1>Messagerie instantanée</h1>
     <nav>
+        <a href="contact.html">Contacts</a>
         <a href="conversation.html">Conversation générale</a>
-        <a href="parametre.html">Paramètres</a>
-        <a href="index.html">Connexion</a>
+        <a href="discussions.html">Mes discussions</a>
+        <a href="profil.html">Mon profil</a>
     </nav>
-    <h2>Utilisateurs disponibles</h2>
-    <ul id="listeContacts"></ul>
-    <p id="messageRetour" role="status"></p>
+    <main class="page-contacts">
+        <h2>Mes contacts 👥</h2>
+        <p>Choisissez un utilisateur pour discuter en privé.</p>
+        <input
+            type="search"
+            id="rechercheContact"
+            placeholder="Rechercher un contact..."
+            aria-label="Rechercher un contact"
+        >
+        <div id="listeContacts"></div>
+        <p id="messageRetour" role="status"></p>
+    </main>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="contacts.js"></script>
 </body>
