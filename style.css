@@ -281,3 +281,14 @@ a:hover {
 .carte-discussion button:hover {
     background: #7c3aed;
 }
+/* Compteur de messages non lus */
+.compteur-non-lus {
+    display: inline-block;
+    background: #5b21b6;
+    color: white;
+    border-radius: 20px;
+    padding: 5px 12px;
+    margin: 0 12px 12px 0;
+    font-size: 13px;
+    font-weight: bold;
+}
