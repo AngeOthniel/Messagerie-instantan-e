@@ -247,3 +247,37 @@ a:hover {
         padding: 15px;
     }
 }
+/* Liste des conversations privées */
+#listeDiscussions {
+    max-width: 700px;
+    margin: 25px auto;
+}
+.carte-discussion {
+    background: white;
+    padding: 20px;
+    margin-bottom: 15px;
+    border-radius: 15px;
+    text-align: left;
+    border: 1px solid #e9ddff;
+    box-shadow: 0 4px 12px rgba(91, 33, 182, 0.08);
+}
+.carte-discussion h3 {
+    color: #5b21b6;
+    margin: 0 0 10px;
+}
+.carte-discussion p {
+    color: #666;
+    margin-bottom: 15px;
+    overflow-wrap: anywhere;
+}
+.carte-discussion button {
+    background: #5b21b6;
+    color: white;
+    border-radius: 10px;
+    cursor: pointer;
+    width: auto;
+    max-width: 100%;
+}
+.carte-discussion button:hover {
+    background: #7c3aed;
+}
