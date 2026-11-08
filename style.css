@@ -361,3 +361,44 @@ a:hover {
 #messageProfil {
     margin-top: 15px;
 }
+/* Choix et enregistrement de la photo */
+.zone-photo {
+    margin: 18px auto 22px;
+    max-width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.zone-photo label {
+    color: #5b21b6;
+    font-weight: bold;
+}
+.zone-photo input[type="file"] {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 10px;
+    border: 1px solid #ddd6fe;
+    border-radius: 10px;
+    background: #faf5ff;
+}
+#boutonPhoto {
+    background: #5b21b6;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    cursor: pointer;
+}
+#boutonPhoto:hover {
+    background: #7c3aed;
+}
+#boutonPhoto:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.avatar-profil {
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+}
